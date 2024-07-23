@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 
@@ -31,6 +32,9 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body className={manrope.className}>
         <Providers>
           <div className="h-screen flex text-white">
+            <div className="fixed top-10 right-10 walletConnectBtn">
+              <ConnectButton />
+            </div>
             <div className="w-[15%]">
               <Sidebar />
             </div>

@@ -64,3 +64,12 @@ body {
 .smooth-transition {
   transition: all 0.2s ease-in-out;
 }
+
+.walletConnectBtn {
+  .iekbcc0 {
+    background-color: transparent;
+    border: 1px solid var(--primaryColor);
+    border-radius: 10px;
+    color: var(--primaryColor);
+  }
+}

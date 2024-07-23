@@ -20,10 +20,10 @@ const Sidebar = () => {
           </div>
         </div>
         <div>
-          <SidebarBtn icon={mintIcon} text="Mint" link="/" />
-          <SidebarBtn icon={withdrawIcon} text="Withdraw" link="/" />
-          <SidebarBtn icon={repayIcon} text="Repay" link="/" />
-          <SidebarBtn icon={redeemIcon} text="Redeem" link="/" />
+          <SidebarBtn icon={mintIcon} text="mint" link="/" />
+          <SidebarBtn icon={withdrawIcon} text="withdraw" link="/withdraw" />
+          <SidebarBtn icon={repayIcon} text="repay" link="/repay" />
+          <SidebarBtn icon={redeemIcon} text="redeem" link="/redeem" />
         </div>
       </div>
       <div className="flex flex-col gap-12 w-full items-center pb-8">

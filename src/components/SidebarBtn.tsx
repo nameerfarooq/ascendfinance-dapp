@@ -1,7 +1,10 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface SidebarBtnProps {
   icon: string;
@@ -10,15 +13,30 @@ interface SidebarBtnProps {
 }
 
 const SidebarBtn: React.FC<SidebarBtnProps> = ({ icon, text, link }) => {
+  const pathname = usePathname().split("/")[1];
+  const [isActive, setisActive] = useState(false);
+  useEffect(() => {
+    if (pathname === text) {
+      setisActive(true);
+    } else if (text === "mint" && pathname === "") {
+      setisActive(true);
+    } else {
+      setisActive(false);
+    }
+  }, [pathname, text]);
   return (
     <Link href={link}>
-      <div className="smooth-transition flex gap-6 items-center py-3 pl-24 pr-3 group hover:cursor-pointer hover:bg-primaryColor">
+      <div
+        className={`${isActive && "active bg-primaryColor"} smooth-transition flex gap-6 items-center py-3 pl-24 pr-3 group hover:cursor-pointer hover:bg-primaryColor`}
+      >
         <Image
           src={icon}
-          alt="mint icon"
-          className="group-hover:filter group-hover:invert  group-hover:brightness-0"
+          alt={`${text} icon`}
+          className={`group-hover:filter group-hover:invert group-hover:brightness-0 ${
+            isActive ? "filter invert brightness-0" : ""
+          }`}
         />
-        <span className="text-1 group-hover:text-white">{text}</span>
+        <span className={`${isActive && "text-white"} text-lightGray text-1 group-hover:text-white `}>{text}</span>
       </div>
     </Link>
   );
