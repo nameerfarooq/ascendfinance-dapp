@@ -23,10 +23,30 @@ const Sidebar = () => {
           <SidebarBtn icon={mintIcon} text="Mint" link="/" />
           <SidebarBtn icon={withdrawIcon} text="Withdraw" link="/" />
           <SidebarBtn icon={repayIcon} text="Repay" link="/" />
-          <SidebarBtn icon={redeemIcon} text="Redeem" link="/a" />
+          <SidebarBtn icon={redeemIcon} text="Redeem" link="/" />
         </div>
       </div>
-      <div>b</div>
+      <div className="flex flex-col gap-12 w-full items-center pb-8">
+        <HorizontalLine />
+        <div className="px-2 py-6 w-4/6 flex flex-col gap-4">
+          <p className="text-center text-[1.4rem] font-bold leading-7">PROTOCOL STATS</p>
+
+          <div className="flex flex-col gap-0">
+            <div className="flex justify-between items-center">
+              <p className="text-2">Deposits:</p>
+              <p className="text-2">$20m</p>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-2">Liquidity:</p>
+              <p className="text-2">$13m</p>
+            </div>
+            <div className="flex justify-between items-center ">
+              <p className="text-3">Total TVL:</p>
+              <p className="text-3">$33m</p>
+            </div>
+          </div>
+        </div>{" "}
+      </div>
     </div>
   );
 };
