@@ -8,7 +8,7 @@ const Footer: FC = () => {
   return (
     <Box as="footer" p={"1rem"} position="sticky" bottom={0} zIndex={10} textAlign={"center"}>
       <Link
-        href="https://github.com/UsamaZuberi/Next-Web3-Boilerplate"
+        href="https://github.com/borisascend/ascendfinance-frontend"
         target="_blank"
         rel="noopener noreferrer"
       >

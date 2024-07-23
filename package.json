@@ -1,15 +1,15 @@
 {
-  "name": "next-web3-boilerplate",
+  "name": "Ascend Finance",
   "version": "1.0.0",
   "description": "Nextjs web3 boilerplate built on Viem, Wagmi, rainbowkit and Chakra UI",
-  "author": "UsamaZuberi <usama.zuberi1010@gmail.com>",
+  "author": "boris <boris@ascendfinance.xyz>",
   "license": "MIT",
   "private": true,
-  "homepage": "https://github.com/UsamaZuberi/Next-Web3-Boilerplate",
-  "bugs": "https://github.com/UsamaZuberi/Next-Web3-Boilerplate/issues",
+  "homepage": "https://github.com/borisascend/ascendfinance-frontend",
+  "bugs": "https://github.com/borisascend/ascendfinance-frontend",
   "repository": {
     "type": "git",
-    "url": "https://github.com/UsamaZuberi/Next-Web3-Boilerplate"
+    "url": "https://github.com/borisascend/ascendfinance-frontend"
   },
   "type": "commonjs",
   "scripts": {

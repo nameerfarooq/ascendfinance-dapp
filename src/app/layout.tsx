@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   applicationName: "Ascend Finance",
   description: "Ascend Finance protocol",
   authors: {
-    name: "UsamaZuberi",
-    url: "https://github.com/UsamaZuberi/Next-Web3-Boilerplate",
+    name: "boris",
+    url: "https://github.com/borisascend/ascendfinance-frontend",
   },
   icons: "favicon.ico",
   manifest: "site.webmanifest",
