@@ -1,13 +1,17 @@
 import type { ReactNode } from "react";
 
-import "@/styles/globals.css";
 import type { Metadata } from "next";
-import { Open_Sans } from "next/font/google";
+import { Manrope } from "next/font/google";
 
-import "@rainbow-me/rainbowkit/styles.css";
+import Sidebar from "@/components/Sidebar";
+
 import { Providers } from "./providers";
 
-const open_sans = Open_Sans({ subsets: ["latin"] });
+import "@/styles/globals.scss";
+
+import "@rainbow-me/rainbowkit/styles.css";
+
+const manrope = Manrope({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Ascend Finance",
@@ -21,16 +25,17 @@ export const metadata: Metadata = {
   manifest: "site.webmanifest",
 };
 
-export default function RootLayout({
-  children,
- 
-}: Readonly<{ children: ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body className={open_sans.className}>
+      <body className={manrope.className}>
         <Providers>
-          {children}
-       
+          <div className="h-screen flex text-white">
+            <div className="w-[15%]">
+              <Sidebar />
+            </div>
+            <div className="w-[100%]">{children}</div>
+          </div>
         </Providers>
       </body>
     </html>
