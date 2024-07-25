@@ -75,7 +75,7 @@ body {
   }
 }
 
-.dashboard-background ::before {
+.dashboard-background::before {
   content: "";
   position: absolute;
   top: 80px;
@@ -103,14 +103,13 @@ body {
   }
 }
 
-
 ::-webkit-scrollbar {
   width: 2px;
 }
 
 /* Track */
 ::-webkit-scrollbar-track {
-  background: #1B2334;
+  background: #1b2334;
 }
 
 /* Handle */
@@ -118,4 +117,6 @@ body {
   background: var(--lightGray2);
 }
 
-
+.vault-card {
+  box-shadow: 0px 4px 4px 0px #00000040;
+}
