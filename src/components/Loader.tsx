@@ -49,7 +49,7 @@ const Loader = () => {
               </div>
             </>
 
-            <p className="text-center text-[18px] font-bold">{text1}</p>
+            <p className="text-center text-[18px] font-bold text-white">{text1}</p>
             <p className="text-center text-[18px] font-bold text-primaryColor">{text2}</p>
           </div>
         </div>
