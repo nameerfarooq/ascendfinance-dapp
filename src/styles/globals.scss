@@ -73,3 +73,31 @@ body {
     color: var(--primaryColor);
   }
 }
+
+.dashboard-background ::before {
+  content: "";
+  position: absolute;
+  top: 80px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  background-image: url("../../public/img/MountainBG.svg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+.spinner-icon-animate {
+  animation: spin 1.5s linear infinite;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

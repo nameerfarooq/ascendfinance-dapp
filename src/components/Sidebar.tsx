@@ -2,7 +2,6 @@ import React, { useEffect, useState, type ReactEventHandler } from "react";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Image from "next/image";
-import { GiHamburgerMenu } from "react-icons/gi";
 import { IoCloseSharp } from "react-icons/io5";
 
 import HorizontalLine from "./HorizontalLine";

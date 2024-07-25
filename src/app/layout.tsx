@@ -72,7 +72,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
 
-            <div className="w-[100%]">{children}</div>
+            <div className="w-[100%] dashboard-background">{children}</div>
           </div>
         </Providers>
       </body>
