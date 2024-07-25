@@ -74,7 +74,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
 
-            <div className="w-[100%] dashboard-background">{children}</div>
+            <div className="w-[100%] dashboard-background overflow-y-scroll pb-12">{children}</div>
           </div>
           <Loader />
         </Providers>
