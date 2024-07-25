@@ -7,6 +7,7 @@ import { Manrope } from "next/font/google";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { IoCloseSharp } from "react-icons/io5";
 
+import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
 
 import { Providers } from "./providers";
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
   return (
     <html lang="en">
       <body className={manrope.className}>
@@ -74,6 +76,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 
             <div className="w-[100%] dashboard-background">{children}</div>
           </div>
+          <Loader />
         </Providers>
       </body>
     </html>
