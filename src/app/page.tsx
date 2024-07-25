@@ -21,7 +21,7 @@ const MintPage = () => {
       }),
     );
   };
-  // setLoaderTrue();
+  setLoaderTrue();
   return (
     <div className="w-[85%]  2xl:w-[70%] mx-auto mt-[150px]">
       <div className="px-5 flex gap-6 items-center">
