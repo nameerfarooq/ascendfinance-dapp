@@ -11,6 +11,7 @@
   --primaryColor: #27b769;
   --secondaryColor: #1b2334;
   --lightGray: #647594;
+  --lightGray2: #4c5971;
 }
 
 * {
@@ -101,3 +102,20 @@ body {
     transform: rotate(360deg);
   }
 }
+
+
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #1B2334;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--lightGray2);
+}
+
+

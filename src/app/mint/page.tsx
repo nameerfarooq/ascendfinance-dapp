@@ -1,7 +1,14 @@
-import React from "react";
+"use client";
+import { useState } from "react";
+
+import CollateralTypeCard from "@/components/CollateralTypeCard";
 
 const page = () => {
-  return <div>Mint page</div>;
+  const [showCollateralCard, setshowCollateralCard] = useState(true);
+  const handleShowCollateralCard = ()=>{
+    setshowCollateralCard(!showCollateralCard)
+  }
+  return <div>{showCollateralCard && <CollateralTypeCard handleShowCollateralCard={handleShowCollateralCard}/>}</div>;
 };
 
 export default page;
