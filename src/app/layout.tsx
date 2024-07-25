@@ -5,6 +5,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 // import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { GiHamburgerMenu } from "react-icons/gi";
+import { IoCloseSharp } from "react-icons/io5";
 
 import Sidebar from "@/components/Sidebar";
 
@@ -58,15 +59,15 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body className={manrope.className}>
         <Providers>
           <div className="h-screen flex text-white">
-            <div className="fixed top-10 right-10 walletConnectBtn flex gap-12 items-center">
+            <div className="fixed top-5 right-10 walletConnectBtn flex gap-12 items-center">
               <div onClick={handleShowSideBar} className="cursor-pointer block xl:hidden">
-                <GiHamburgerMenu size={28} />
+                {showSideBar ? <IoCloseSharp size={28} /> : <GiHamburgerMenu size={28} />}
               </div>
               <ConnectButton />
             </div>
 
             <div
-              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[50px]"} smooth-transition fixed top-0 left-0  xl:static`}
+              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl`}
             >
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>

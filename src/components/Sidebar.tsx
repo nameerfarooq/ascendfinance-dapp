@@ -1,4 +1,4 @@
-import React, { type ReactEventHandler } from "react";
+import React, { useEffect, useState, type ReactEventHandler } from "react";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import Image from "next/image";
@@ -18,10 +18,32 @@ interface SidebarProps {
   handleShowSideBar: ReactEventHandler;
 }
 const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => {
+  const [showIcon, setshowIcon] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1280) {
+        setshowIcon(false);
+      } else {
+        setshowIcon(true);
+      }
+    };
+
+    // Set the initial state based on the window size
+    handleResize();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
   return (
     <div className="bg-baseColor py-12 flex flex-col relative justify-between w-full h-screen">
       <div onClick={handleShowSideBar} className="absolute top-2 right-2 cursor-pointer m-5">
-        {showSideBar ? <IoCloseSharp size={28}/> : <GiHamburgerMenu size={28} />}
+        {showIcon && showSideBar && <IoCloseSharp size={28} />}
       </div>
 
       {showSideBar && (
