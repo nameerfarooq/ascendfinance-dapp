@@ -18,7 +18,7 @@ const SidebarBtn: React.FC<SidebarBtnProps> = ({ icon, text, link }) => {
   useEffect(() => {
     if (pathname === text) {
       setisActive(true);
-    } else if (text === "mint" && pathname === "") {
+    } else if (text === "vaults" && pathname === "") {
       setisActive(true);
     } else {
       setisActive(false);
@@ -27,7 +27,7 @@ const SidebarBtn: React.FC<SidebarBtnProps> = ({ icon, text, link }) => {
   return (
     <Link href={link}>
       <div
-        className={`${isActive && "active bg-primaryColor"} smooth-transition flex gap-6 items-center py-3 pl-24 pr-3 group hover:cursor-pointer hover:bg-primaryColor`}
+        className={`${isActive && "active bg-primaryColor"} smooth-transition flex gap-6 items-center py-3 pl-[25%] pr-3 group hover:cursor-pointer hover:bg-primaryColor`}
       >
         <Image
           src={icon}

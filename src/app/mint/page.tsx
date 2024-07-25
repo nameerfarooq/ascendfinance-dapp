@@ -1,7 +1,7 @@
 import React from "react";
 
 const page = () => {
-  return <div>Withdraw page</div>;
+  return <div>Mint page</div>;
 };
 
 export default page;
