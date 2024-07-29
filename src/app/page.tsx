@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+import { useEffect } from "react";
+
 import Image from "next/image";
 import { useDispatch } from "react-redux";
 
@@ -12,18 +14,20 @@ import weETHIcon from "../../public/icons/weETH.svg";
 
 const MintPage = () => {
   const dispatch = useDispatch();
-  const setLoaderTrue = async () => {
-    dispatch(
-      setLoader({
-        loading: true,
-        text1: "Minting",
-        text2: "123123 Blue",
-      }),
-    );
-  };
-  setLoaderTrue();
+  useEffect(() => {
+    const setLoaderTrue = async () => {
+      dispatch(
+        setLoader({
+          loading: true,
+          text1: "Minting",
+          text2: "123123 Blue",
+        }),
+      );
+    };
+    // setLoaderTrue();
+  }, []);
   return (
-    <div className="w-[85%]  2xl:w-[70%] mx-auto mt-[150px]">
+    <div className="w-[85%]  2xl:w-[50%] mx-auto mt-[150px]">
       <div className="px-5 flex gap-6 items-center">
         <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
         <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
@@ -32,7 +36,7 @@ const MintPage = () => {
         Info about vaults and available LSTs etc. More coming in the future.
       </p>
       <hr className="border-[#647594] w-full my-12" />
-      <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-12 grid-cols-1 sm:grid-cols-2">
         <VaultCard
           iconImg={weETHIcon}
           symbol="weETH"
@@ -42,6 +46,8 @@ const MintPage = () => {
           minCollateralRation="130%"
           apr="5.99% - 8.99%"
           btnText="Choose weETH"
+          learnMoreLink={"/"}
+          infoSymbol="Renzo"
           btnAction={() => {}}
         />
         <VaultCard
@@ -51,8 +57,10 @@ const MintPage = () => {
           tvl="$328.34k"
           mintedBlue="299.99k/20.00m"
           minCollateralRation="130%"
-          apr="2.99% - 3.99%"
+          apr="2.99%-3.99%"
           btnText="Choose ezETH"
+          learnMoreLink={"/"}
+          infoSymbol="Ether.fi"
           btnAction={() => {}}
         />
       </div>
