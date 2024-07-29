@@ -4,7 +4,7 @@ import { useState } from "react";
 import CollateralTypeCard from "@/components/CollateralTypeCard";
 
 const MintPage = () => {
-  const [showCollateralCard, setshowCollateralCard] = useState(true);
+  const [showCollateralCard, setshowCollateralCard] = useState(false);
   const handleShowCollateralCard = () => {
     setshowCollateralCard(!showCollateralCard);
   };

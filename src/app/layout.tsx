@@ -61,7 +61,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body className={manrope.className}>
         <Providers>
           <div className="h-screen flex text-white">
-            <div className="fixed top-5 right-10 walletConnectBtn flex gap-12 items-center">
+            <div className="absolute top-0 left-0 justify-end  w-full  bg-baseColor md:bg-transparent shadow-2xl md:shadow-none p-5 md:fixed md:top-5 md:right-10 walletConnectBtn flex gap-12 items-center z-40">
               <div onClick={handleShowSideBar} className="cursor-pointer block xl:hidden">
                 {showSideBar ? <IoCloseSharp size={28} /> : <GiHamburgerMenu size={28} />}
               </div>
@@ -69,7 +69,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             </div>
 
             <div
-              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl`}
+              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl z-50`}
             >
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
