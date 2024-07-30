@@ -62,9 +62,9 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
               </div>
             </div>
             <div
-              onClick={() => {
+              onClick={(e) => {
                 if (showIcon) {
-                  handleShowSideBar();
+                  handleShowSideBar(e);
                 }
               }}
             >
