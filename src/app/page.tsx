@@ -13,19 +13,7 @@ import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 import weETHIcon from "../../public/icons/weETH.svg";
 
 const MintPage = () => {
-  const dispatch = useDispatch();
-  useEffect(() => {
-    const setLoaderTrue = async () => {
-      dispatch(
-        setLoader({
-          loading: true,
-          text1: "Minting",
-          text2: "123123 Blue",
-        }),
-      );
-    };
-    // setLoaderTrue();
-  }, []);
+ 
   return (
     <div className="w-[85%]  2xl:w-[50%] mx-auto mt-[150px]">
       <div className="px-5 flex gap-6 items-center">

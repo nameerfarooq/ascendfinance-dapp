@@ -61,20 +61,32 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body className={manrope.className}>
         <Providers>
           <div className="h-screen flex text-white">
-            <div className="absolute top-0 left-0 justify-end  w-full  bg-baseColor md:bg-transparent shadow-2xl md:shadow-none p-5 md:fixed md:top-5 md:right-10 walletConnectBtn flex gap-12 items-center z-40">
-              <div onClick={handleShowSideBar} className="cursor-pointer block xl:hidden">
-                {showSideBar ? <IoCloseSharp size={28} /> : <GiHamburgerMenu size={28} />}
-              </div>
-              <ConnectButton />
-            </div>
-
             <div
-              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl z-50`}
+              className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static hidden xl:block shadow-2xl z-50`}
             >
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
+            {showSideBar && (
+              <div className="block xl:hidden fixed top-0 left-0 bg-black bg-opacity-70 w-full h-screen z-[50]">
+                <div
+                  className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl z-50`}
+                >
+                  <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
+                </div>
+              </div>
+            )}
 
-            <div className="w-[100%] dashboard-background overflow-y-scroll pb-12">{children}</div>
+            <div className="w-[100%] dashboard-background">
+              <div className="justify-between xl:justify-end  w-full h-[70px] sticky xl:fixed top-0 left-0  bg-baseColor xl:bg-transparent shadow-2xl xl:shadow-none py-5 px-10 walletConnectBtn flex gap-12 items-center z-40">
+                <div onClick={handleShowSideBar} className="cursor-pointer block xl:hidden">
+                  <GiHamburgerMenu size={28} />
+                </div>
+                <ConnectButton />
+              </div>
+              <div className="overflow-y-scroll h-[calc(100vh-70px)] xl:h-screen pb-12 xl:pt-[70px]">
+                {children}
+              </div>
+            </div>
           </div>
           <Loader />
         </Providers>

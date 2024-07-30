@@ -41,9 +41,14 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
 
   return (
     <div className="bg-baseColor py-12 flex flex-col relative justify-between w-full h-screen">
-      <div onClick={handleShowSideBar} className="absolute top-2 right-2 cursor-pointer m-5">
-        {showIcon && showSideBar && <IoCloseSharp size={28} />}
-      </div>
+      {showIcon && showSideBar && (
+        <div
+          onClick={handleShowSideBar}
+          className="absolute top-[20px] -right-[65px] cursor-pointer m-5 p-2 rounded-md bg-baseColor shadow-2xl"
+        >
+          <IoCloseSharp size={28} />
+        </div>
+      )}
 
       {showSideBar && (
         <>

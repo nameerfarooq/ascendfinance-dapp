@@ -4,18 +4,30 @@ import { useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useDispatch } from "react-redux";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 
 import ezETHIcon from "../../../public/icons/ezETH.svg";
 import mintIcon from "../../../public/icons/mintIcon.svg";
 import weETHIcon from "../../../public/icons/weETH.svg";
+import { setLoader } from "../lib/features/loaderSlice";
 const MintPage = () => {
   const [showVaults, setshowVaults] = useState(false);
   const [zap, setZap] = useState(0);
   const [debt, setDebt] = useState(0);
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
+  };
+  const dispatch = useDispatch();
+  const setLoaderTrue = async () => {
+    dispatch(
+      setLoader({
+        loading: true,
+        text1: "Minting",
+        text2: "123123 Blue",
+      }),
+    );
   };
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -103,6 +115,21 @@ const MintPage = () => {
               </div>
             </div>
           </div>
+          <div
+            className={`${zap > 0 ? "h-[60px] opacity-100" : "h-0 opacity-0"} smooth-transition flex flex-col gap-3 font-medium text-lightGray text-[12px] leading-[24px]`}
+          >
+            <div className="flex justify-between items-center">
+              <p>Exchange rate</p>
+              <p>(1,16495) 1.00 ETH to 0.85 weETH</p>
+            </div>
+            <div className="flex justify-between items-center">
+              <p>Your total collateral</p>
+              <p>
+                {" "}
+                <span className="font-bold text-white"> 0.85 weETH </span>= $3 929.00{" "}
+              </p>
+            </div>
+          </div>
           <div className="rounded-2xl border-2 mt-6 border-primaryColor py-8 px-8 flex flex-col gap-6 font-medium text-[12px] leading-[24px]">
             <div>
               <p>Debt</p>
@@ -144,7 +171,13 @@ const MintPage = () => {
             </div>
           </div>
           <div className="mt-8">
-            <ButtonStyle1 text="Approve weETH" action={async () => {}} disabled={false} />
+            <ButtonStyle1
+              text="Zap ETH"
+              action={async () => {
+                setLoaderTrue();
+              }}
+              disabled={false}
+            />
           </div>
         </div>
         <hr className="border-lightGray2" />
