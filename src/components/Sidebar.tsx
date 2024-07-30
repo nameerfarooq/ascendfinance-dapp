@@ -61,7 +61,13 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
                 <HorizontalLine />
               </div>
             </div>
-            <div>
+            <div
+              onClick={() => {
+                if (showIcon) {
+                  handleShowSideBar();
+                }
+              }}
+            >
               <SidebarBtn icon={vaultsIcon} text="vaults" link="/" />
               <SidebarBtn icon={mintIcon} text="mint" link="/mint" />
               <SidebarBtn icon={positionsIcon} text="positions" link="/positions" />

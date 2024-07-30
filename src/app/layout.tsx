@@ -67,7 +67,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
             {showSideBar && (
-              <div className="block xl:hidden fixed top-0 left-0 bg-black bg-opacity-70 w-full h-screen z-[50]">
+              <div className="block xl:hidden fixed top-0 left-0 bg-black bg-opacity-80 w-full h-screen z-[50]">
                 <div
                   className={`${showSideBar ? "w-[15%] min-w-[200px]" : "min-w-[0px]"}  fixed top-0 left-0  xl:static shadow-2xl z-50`}
                 >
