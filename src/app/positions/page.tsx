@@ -14,7 +14,7 @@ const Page = () => {
   const [positionsAvailable, setpositionsAvailable] = useState(true);
   return (
     <div className="flex items-center justify-center min-h-full w-full">
-      <div className="bg-baseColor rounded-3xl w-[95%] mt-36 mb-22 sm:my-[10px] sm:w-[70%] xl:w-[80%] 2xl:w-[40%]">
+      <div className="bg-baseColor shadowCustom rounded-3xl w-[95%] mt-36 mb-22 sm:my-[10px] sm:w-[70%] xl:w-[80%] 2xl:w-[40%]">
         <div className="pt-6 pb-16 px-12">
           <div className="flex items-center gap-6">
             <Image

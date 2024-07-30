@@ -17,7 +17,7 @@ interface CollateralTypeCardProps {
 const CollateralTypeCard: React.FC<CollateralTypeCardProps> = ({ handleShowCollateralCard }) => {
   return (
     <div className="absolute top-0 left-0 w-full h-screen bg-black bg-opacity-70 flex items-center justify-center">
-      <div className="relative rounded-3xl flex flex-col gap-4 px-10 py-8  bg-baseColor w-[460px] min-w-[250px]">
+      <div className="relative shadowCustom rounded-3xl flex flex-col gap-4 px-10 py-8  bg-baseColor w-[460px] min-w-[250px]">
         <div onClick={handleShowCollateralCard} className="absolute top-10 right-10 cursor-pointer">
           <RxCross2 size={22} color="white" />
         </div>

@@ -25,7 +25,7 @@ const Loader = () => {
     <>
       {loading && (
         <div className="absolute top-0 left-0 w-full h-screen bg-black bg-opacity-70 flex items-center justify-center">
-          <div className="relative rounded-3xl flex flex-col gap-4 py-12 px-12 bg-baseColor min-w-[150px]">
+          <div className="relative rounded-3xl flex shadowCustom flex-col gap-4 py-12 px-12 bg-baseColor min-w-[150px]">
             <div onClick={clearLoader} className="absolute top-8 right-5 cursor-pointer">
               <RxCross2 size={16} color="white" />
             </div>
