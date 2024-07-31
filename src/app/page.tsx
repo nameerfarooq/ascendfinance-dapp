@@ -10,7 +10,6 @@ import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 import weETHIcon from "../../public/icons/weETH.svg";
 
 const MintPage = () => {
- 
   return (
     <div className="w-[90%]  2xl:w-[50%] mx-auto sm:mt-[150px] mt-[70px]">
       <div className="px-5 flex gap-6 items-center">
@@ -33,7 +32,7 @@ const MintPage = () => {
           btnText="Choose weETH"
           learnMoreLink={"/"}
           infoSymbol="Renzo"
-          btnAction={() => {}}
+          btnAction={async () => {}}
         />
         <VaultCard
           iconImg={ezETHIcon}
@@ -46,7 +45,7 @@ const MintPage = () => {
           btnText="Choose ezETH"
           learnMoreLink={"/"}
           infoSymbol="Ether.fi"
-          btnAction={() => {}}
+          btnAction={async () => {}}
         />
       </div>
     </div>

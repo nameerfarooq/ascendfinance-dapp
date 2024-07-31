@@ -9,8 +9,9 @@ import { GiHamburgerMenu } from "react-icons/gi";
 
 import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
-import ascendLogo from "../../public/img/ascendLogo.svg";
+
 import { Providers } from "./providers";
+import ascendLogo from "../../public/img/ascendLogo.svg";
 
 import "@/styles/globals.scss";
 

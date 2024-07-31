@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 
@@ -11,7 +11,10 @@ import postionsIcon from "../../../public/icons/positionsIcon.svg";
 import weETHIcon from "../../../public/icons/weETH.svg";
 
 const Page = () => {
-  const [positionsAvailable, setpositionsAvailable] = useState(true);
+  const [positionsAvailable, setpositionsAvailable] = useState(false);
+  useEffect(() => {
+    setpositionsAvailable(true);
+  }, []);
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-36 mb-22 sm:my-[10px] sm:w-[70%] xl:w-[80%] 2xl:w-[40%]">

@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-undef */
-import React, { type ReactEventHandler } from "react";
+import React from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -19,7 +19,7 @@ interface VaultCardProps {
   learnMoreLink: string;
   infoSymbol: string;
 
-  btnAction: ReactEventHandler;
+  btnAction: () => Promise<void>;
 }
 const VaultCard: React.FC<VaultCardProps> = ({
   iconImg,
@@ -65,14 +65,14 @@ const VaultCard: React.FC<VaultCardProps> = ({
         <div className="px-24 flex items-center gap-4">
           <CgInfo size={40} />
           <p className="font-medium text-[12px] leading-[15px]">
-            Earn 2x <span className="font-bold">{infoSymbol}</span>{" "}points on collateral supplied.{" "}
+            Earn 2x <span className="font-bold">{infoSymbol}</span> points on collateral supplied.{" "}
             <Link href={learnMoreLink}>
               <span className="font-bold">Learn More</span>
             </Link>
           </p>
         </div>
         <div className="px-12">
-          <ButtonStyle1 text={btnText} action={btnAction} />
+          <ButtonStyle1 text={btnText} action={btnAction} disabled={false} />
         </div>
       </div>
     </div>
