@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
   }, []);
 
   return (
-    <div className="bg-baseColor py-12 flex flex-col relative justify-between w-full h-screen">
+    <div className="bg-baseColor py-12 flex flex-col relative gap-24 sm:justify-between w-full h-screen">
       {showIcon && showSideBar && (
         <div
           onClick={handleShowSideBar}

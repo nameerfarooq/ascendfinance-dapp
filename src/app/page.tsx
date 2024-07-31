@@ -1,13 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
-import { useEffect } from "react";
 
 import Image from "next/image";
-import { useDispatch } from "react-redux";
 
 import VaultCard from "@/components/VaultCard";
 
-import { setLoader } from "./lib/features/loaderSlice";
 import ezETHIcon from "../../public/icons/ezETH.svg";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 import weETHIcon from "../../public/icons/weETH.svg";
@@ -15,7 +12,7 @@ import weETHIcon from "../../public/icons/weETH.svg";
 const MintPage = () => {
  
   return (
-    <div className="w-[85%]  2xl:w-[50%] mx-auto mt-[150px]">
+    <div className="w-[90%]  2xl:w-[50%] mx-auto sm:mt-[150px] mt-[70px]">
       <div className="px-5 flex gap-6 items-center">
         <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
         <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
