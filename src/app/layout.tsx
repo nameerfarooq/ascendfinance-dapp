@@ -5,7 +5,6 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 // import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { IoCloseSharp } from "react-icons/io5";
 
 import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
