@@ -4,11 +4,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 // import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import Image from "next/image";
 import { GiHamburgerMenu } from "react-icons/gi";
 
 import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
-
+import ascendLogo from "../../public/img/ascendLogo.svg";
 import { Providers } from "./providers";
 
 import "@/styles/globals.scss";
@@ -77,10 +78,20 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 
             <div className="w-[100%] dashboard-background">
               <div className="justify-between xl:justify-end  w-full h-[70px] sticky xl:fixed top-0 left-0  bg-baseColor xl:bg-transparent shadow-2xl xl:shadow-none py-5 px-10 walletConnectBtn flex gap-12 items-center z-40">
-                <div onClick={handleShowSideBar} className="cursor-pointer block xl:hidden">
-                  <GiHamburgerMenu size={28} />
+                <div className="  xl:hidden flex-1 flex items-center gap-3">
+                  <div
+                    onClick={handleShowSideBar}
+                    className="cursor-pointer p-3 rounded-lg bg-secondaryColor"
+                  >
+                    <GiHamburgerMenu size={28} />
+                  </div>
                 </div>
-                <ConnectButton />
+                <div className="hidden sm:flex xl:hidden flex-1  items-center justify-center">
+                  <Image src={ascendLogo} alt="Ascend Logo" width={55} />
+                </div>
+                <div className="flex-1 flex justify-end">
+                  <ConnectButton />
+                </div>
               </div>
               <div className="overflow-y-scroll h-[calc(100vh-70px)] xl:h-screen pb-12 xl:pt-[70px]">
                 {children}
