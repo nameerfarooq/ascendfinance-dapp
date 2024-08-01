@@ -17,7 +17,7 @@ const Page = () => {
   }, []);
   return (
     <div className="flex items-center justify-center min-h-full w-full">
-      <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[0px] sm:w-[70%] xl:w-[55%] 2xl:w-[40%]">
+      <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[0px] sm:w-[75%] md:w-[70%] lg:w-[60%]  xl:w-[55%] 2xl:w-[40%]">
         <div className="pt-6 pb-16 px-12">
           <div className="flex items-center gap-6">
             <Image

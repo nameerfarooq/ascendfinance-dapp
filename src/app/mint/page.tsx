@@ -31,7 +31,7 @@ const MintPage = () => {
   };
   return (
     <div className="flex items-center justify-center min-h-full w-full">
-      <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[70%] xl:w-[45%]">
+      <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[80%] md:w-[70%] lg:w-[55%]  xl:w-[48%]">
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
             <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />

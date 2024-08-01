@@ -36,7 +36,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
 }) => {
   return (
     <div className="bg-baseColor rounded-[20px] vault-card">
-      <div className="py-8 px-12 flex gap-6 items-center">
+      <div className="py-8 px-8 2xl:px-12 flex gap-6 items-center">
         <Image src={iconImg} alt="icon" width={55} />
         <div className="flex flex-col gap-0">
           <p className="font-bold text-[24px] leading-[28px]">{symbol}</p>
@@ -45,7 +45,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
       </div>
       <hr className=" border-[#647594]" />
       <div className="flex flex-col gap-8 my-12">
-        <div className=" px-12 text-lightGray">
+        <div className=" px-8 2xl:px-12 text-lightGray">
           <div className="flex justify-between items-center gap-3">
             <p className="font-medium text-[12px] leading-[24px]">Total value locked</p>
             <p className="font-bold text-[12px] leading-[24px]">{tvl}</p>
@@ -62,7 +62,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
         <p className="text-center font-medium text-[16px] leading-[32px] bg-lightGray">
           APR <span className="font-bold"> {apr}</span>
         </p>
-        <div className="px-24 flex items-center gap-4">
+        <div className="px-12 2xl:px-24 flex items-center gap-4">
           <CgInfo size={40} />
           <p className="font-medium text-[12px] leading-[15px]">
             Earn 2x <span className="font-bold">{infoSymbol}</span> points on collateral supplied.{" "}
