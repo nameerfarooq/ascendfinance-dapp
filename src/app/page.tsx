@@ -11,7 +11,7 @@ import weETHIcon from "../../public/icons/weETH.svg";
 
 const MintPage = () => {
   return (
-    <div className="w-[90%]  2xl:w-[50%] mx-auto sm:mt-[150px] mt-[70px]">
+    <div className="w-[90%]  xl:w-[50%] mx-auto  mt-[70px]">
       <div className="px-5 flex gap-6 items-center">
         <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
         <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
