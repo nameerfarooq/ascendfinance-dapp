@@ -9,9 +9,9 @@ import ezETHIcon from "../../public/icons/ezETH.svg";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 import weETHIcon from "../../public/icons/weETH.svg";
 
-const MintPage = () => {
+const VaultsPage = () => {
   return (
-    <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] mx-auto  mt-[70px]">
+    <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] mx-auto mt-[70px]">
       <div className="px-5 flex gap-6 items-center">
         <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
         <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
@@ -52,4 +52,4 @@ const MintPage = () => {
   );
 };
 
-export default MintPage;
+export default VaultsPage;
