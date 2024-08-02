@@ -21,12 +21,9 @@ const manrope = Manrope({ subsets: ["latin"] });
 
 // export const metadata: Metadata = {
 //   title: "Ascend Finance",
-//   applicationName: "Ascend Finance",
-//   description: "Ascend Finance protocol",
-//   authors: {
-//     name: "boris",
-//     url: "https://github.com/borisascend/ascendfinance-frontend",
-//   },
+//   applicationName: "ascendfinance-frontend",
+//   description:
+//     "Base-native, Interest-bearing stablecoin. Earn real yield by holding $GREEN, the Base-native stablecoin which is overcollateralized by Liquid Staking Tokens.",
 //   icons: "favicon.ico",
 //   manifest: "site.webmanifest",
 // };
