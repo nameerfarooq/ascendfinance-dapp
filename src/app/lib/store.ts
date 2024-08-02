@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import loaderSlice from "./features/loaderSlice";
+import vaultSlice from "./features/vaultSlice";
 
 export const makeStore = () => {
   return configureStore({
     reducer: {
       loader: loaderSlice,
+      vault: vaultSlice,
     },
   });
 };
