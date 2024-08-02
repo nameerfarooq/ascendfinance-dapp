@@ -1,7 +1,7 @@
 {
   "name": "ascendfinance-frontend",
+  "description": "Base-native, Interest-bearing stablecoin. Earn real yield by holding $GREEN, the Base-native stablecoin which is overcollateralized by Liquid Staking Tokens.",
   "version": "1.0.0",
-  "description": "",
   "license": "MIT",
   "private": true,
   "scripts": {
