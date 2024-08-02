@@ -1,13 +1,18 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import vaultsList from "@/constants/vaults";
+import type { Token } from "@/types";
+
+const defaultVault = vaultsList[Object.keys(vaultsList)[0]];
+
 // Define a type for the slice state
 export interface VaultState {
-  activeVault: string;
+  activeVault: { token: Token };
 }
 
 // Define the initial state using that type
 const initialState: VaultState = {
-  activeVault: ""
+  activeVault: defaultVault,
 };
 
 export const vaultSlice = createSlice({
@@ -15,7 +20,7 @@ export const vaultSlice = createSlice({
   // `createSlice` will infer the state type from the `initialState` argument
   initialState,
   reducers: {
-    setActiveVault: (state, action: PayloadAction<string>) => {
+    setActiveVault: (state, action: PayloadAction<{ token: Token }>) => {
       state.activeVault = action.payload;
     },
 
