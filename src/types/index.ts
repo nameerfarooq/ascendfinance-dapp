@@ -2,11 +2,15 @@
 
 interface Token {
   address: string;
-  chainId?: string;
+  chainId?: number;
   name: string;
   symbol: string;
   decimals: number;
   logoURI: string;
 }
 
-export { type Token };
+type VaultsListType = {
+  [x: string]: { token: Token };
+};
+
+export { type Token, type VaultsListType };
