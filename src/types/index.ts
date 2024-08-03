@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 interface Token {
   address: string;
   chainId?: number;
@@ -9,8 +7,13 @@ interface Token {
   logoURI: string;
 }
 
-type VaultsListType = {
-  [x: string]: { token: Token };
-};
+interface VaultType {
+  name: string;
+  token: Token;
+}
 
-export { type Token, type VaultsListType };
+interface VaultsListType {
+  [x: string]: VaultType;
+}
+
+export type { Token, VaultType, VaultsListType };

@@ -1,21 +1,22 @@
 "use client";
+
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 // import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import Image from "next/image";
 import { GiHamburgerMenu } from "react-icons/gi";
 
+import "@/styles/globals.scss";
+import { Providers } from "@/app/providers";
 import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
 
-import { Providers } from "./providers";
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
-import "@/styles/globals.scss";
 
-import "@rainbow-me/rainbowkit/styles.css";
 
 const manrope = Manrope({ subsets: ["latin"] });
 
