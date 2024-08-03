@@ -1,7 +1,7 @@
-import type { VaultsListType } from "@/types";
 
 import ezETH_Logo from "@/images/tokens/ezETH.svg";
 import weETH_Logo from "@/images/tokens/weETH.svg";
+import type { VaultsListType } from "@/types";
 
 // This is dummy vault till we get the contracts deployed
 const vaultsList: VaultsListType = {

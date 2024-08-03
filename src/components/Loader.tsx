@@ -4,7 +4,7 @@ import Image from "next/image";
 import { RxCross2 } from "react-icons/rx";
 import { useDispatch, useSelector } from "react-redux";
 
-import { setLoader } from "@/app/lib/features/loaderSlice";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 
 import spinner from "../../public/icons/spinner.png";
 import ascendLogo from "../../public/img/ascendLogo.svg";

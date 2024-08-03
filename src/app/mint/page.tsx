@@ -11,7 +11,7 @@ import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import ezETHIcon from "../../../public/icons/ezETH.svg";
 import mintIcon from "../../../public/icons/mintIcon.svg";
 import weETHIcon from "../../../public/icons/weETH.svg";
-import { setLoader } from "../lib/features/loaderSlice";
+import { setLoader } from "../../lib/features/loader/loaderSlice";
 const MintPage = () => {
   const [showVaults, setshowVaults] = useState(false);
   const [zap, setZap] = useState(0);

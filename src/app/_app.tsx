@@ -3,7 +3,7 @@
 import { Analytics } from "@vercel/analytics/react";
 import type { AppProps } from "next/app";
 
-import RootLayout from "./layout";
+import RootLayout from "@/app/layout";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (

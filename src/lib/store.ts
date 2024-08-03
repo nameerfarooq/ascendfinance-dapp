@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
-import loaderSlice from "./features/loaderSlice";
-import vaultSlice from "./features/vaultSlice";
+import loaderSlice from "@/lib/features/loader/loaderSlice";
+import vaultSlice from "@/lib/features/vault/vaultSlice";
 
 export const makeStore = () => {
   return configureStore({
