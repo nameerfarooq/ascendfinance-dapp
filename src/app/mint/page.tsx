@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import vaultsList from "@/constants/vaults";
@@ -11,10 +12,12 @@ import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 import type { VaultType } from "@/types";
+import { getDefaultChainId } from "@/utils/chain";
 
 import mintIcon from "../../../public/icons/mintIcon.svg";
 
 const MintPage = () => {
+  const { chain } = useAccount();
   const dispatch = useAppDispatch();
 
   const activeVault = useAppSelector((state) => state.vault.activeVault);
@@ -22,6 +25,10 @@ const MintPage = () => {
   const [showVaults, setshowVaults] = useState(false);
   const [zap, setZap] = useState(0);
   const [debt, setDebt] = useState(0);
+
+  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+  const nativeVaultsList = vaultsList[appBuildEnvironment];
+  const defaultChainId = getDefaultChainId(chain);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -69,27 +76,31 @@ const MintPage = () => {
               <p className="font-medium text-[12px] leading-[24px]">Vault</p>
               <div className="rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center">
                 <div className="flex items-center gap-3">
-                  <Image src={activeVault.token.logoURI} width={30} alt="token icon" />
-                  <p className="font-bold text-[18px] leading-[36px]">{activeVault.token.symbol}</p>
+                  <Image src={activeVault?.token?.logoURI || ""} width={30} alt="token icon" />
+                  <p className="font-bold text-[18px] leading-[36px]">
+                    {activeVault?.token?.symbol || ""}
+                  </p>
                 </div>
                 {showVaults ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
               </div>
 
               {showVaults && (
                 <div className="absolute z-30 bg-secondaryColor -bottom-[105px] left-0 w-full border rounded-2xl border-[#647594]">
-                  {Object.keys(vaultsList).map((vaultId) => (
+                  {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
                     <Fragment key={vaultId}>
                       <div
-                        onClick={() => setActiveVaultFunc(vaultsList[vaultId])}
+                        onClick={() =>
+                          setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
+                        }
                         className="flex items-center py-2 px-8 gap-3 rounded-t-2xl hover:bg-primaryColor"
                       >
                         <Image
-                          src={vaultsList[vaultId].token.logoURI}
+                          src={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
                           width={30}
                           alt="token icon"
                         />
                         <p className="font-bold text-[18px] leading-[36px]">
-                          {vaultsList[vaultId].token.symbol}
+                          {nativeVaultsList[defaultChainId][vaultId].token.symbol}
                         </p>
                       </div>
                     </Fragment>

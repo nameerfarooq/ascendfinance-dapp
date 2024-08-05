@@ -1,3 +1,5 @@
+import type { Address } from "viem";
+
 interface Token {
   address: string;
   chainId?: number;
@@ -13,7 +15,55 @@ interface VaultType {
 }
 
 interface VaultsListType {
-  [x: string]: VaultType;
+  "DEV": {
+    [x: number]: {
+      [x: string]: VaultType;
+    };
+  };
+  "PROD": {
+    [x: number]: {
+      [x: string]: VaultType;
+    };
+  };
 }
 
-export type { Token, VaultType, VaultsListType };
+interface ContractAddressObjectType {
+  "DEV": {
+    [x: number]: {
+      BORROWER_OPERATIONS: Address;
+      DEBT_TOKEN: Address;
+      FACTORY: Address;
+      LIQUIDATION_MANAGER: Address;
+      PRICE_FEED: Address;
+      PRISMA_CORE: Address;
+      STABILITY_POOL: Address;
+      MULTI_COLLATERAL_HINT_HELPERS: Address;
+      troves: {
+        [x: Address]: {
+          TROVE_MANAGER: Address;
+          SORTED_TROVES: Address;
+        };
+      };
+    };
+  };
+  "PROD": {
+    [x: number]: {
+      BORROWER_OPERATIONS: Address;
+      DEBT_TOKEN: Address;
+      FACTORY: Address;
+      LIQUIDATION_MANAGER: Address;
+      PRICE_FEED: Address;
+      PRISMA_CORE: Address;
+      STABILITY_POOL: Address;
+      MULTI_COLLATERAL_HINT_HELPERS: Address;
+      troves: {
+        [x: Address]: {
+          TROVE_MANAGER: Address;
+          SORTED_TROVES: Address;
+        };
+      };
+    };
+  };
+}
+
+export type { Token, VaultType, VaultsListType, ContractAddressObjectType };

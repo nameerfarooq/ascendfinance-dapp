@@ -16,8 +16,6 @@ import Sidebar from "@/components/Sidebar";
 
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
-
-
 const manrope = Manrope({ subsets: ["latin"] });
 
 // export const metadata: Metadata = {
@@ -31,9 +29,11 @@ const manrope = Manrope({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const [showSideBar, setShowSideBar] = useState(true);
+  
   const handleShowSideBar = () => {
     setShowSideBar(!showSideBar);
   };
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1280) {
@@ -65,6 +65,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             >
               <Sidebar showSideBar={showSideBar} handleShowSideBar={handleShowSideBar} />
             </div>
+
             {showSideBar && (
               <div className="block xl:hidden fixed top-0 left-0 bg-black bg-opacity-80 w-full h-screen z-[50]">
                 <div
@@ -85,18 +86,22 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
                     <GiHamburgerMenu size={28} />
                   </div>
                 </div>
+
                 <div className="hidden sm:flex xl:hidden flex-1  items-center justify-center">
                   <Image src={ascendLogo} alt="Ascend Logo" width={55} />
                 </div>
+
                 <div className="flex-1 flex justify-end">
                   <ConnectButton />
                 </div>
               </div>
+
               <div className="overflow-y-scroll h-[calc(100vh-70px)] xl:h-screen pb-12 xl:pt-[70px]">
                 {children}
               </div>
             </div>
           </div>
+
           <Loader />
         </Providers>
       </body>
