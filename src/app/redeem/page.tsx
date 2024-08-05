@@ -16,6 +16,7 @@ const Page = () => {
   const handleShowCollateralCard = () => {
     setshowCollateralSelectionCard(!showCollateralSelectionCard);
   };
+
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       {showCollateralSelectionCard && (

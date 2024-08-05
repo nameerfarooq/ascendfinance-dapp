@@ -1,23 +1,13 @@
 {
-  "name": "Ascend Finance",
+  "name": "ascendfinance-frontend",
+  "description": "Base-native, Interest-bearing stablecoin. Earn real yield by holding $GREEN, the Base-native stablecoin which is overcollateralized by Liquid Staking Tokens.",
   "version": "1.0.0",
-  "description": "Nextjs web3 boilerplate built on Viem, Wagmi, rainbowkit and Chakra UI",
-  "author": "boris <boris@ascendfinance.xyz>",
   "license": "MIT",
   "private": true,
-  "homepage": "https://github.com/borisascend/ascendfinance-frontend",
-  "bugs": "https://github.com/borisascend/ascendfinance-frontend",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/borisascend/ascendfinance-frontend"
-  },
-  "type": "commonjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "prettier": "prettier --write \"**/*.{ts,tsx,js}\"",
-    "lint": "next lint --fix"
+    "start": "next start"
   },
   "dependencies": {
     "@chakra-ui/icons": "2.1.1",
@@ -58,19 +48,5 @@
     "prettier": "3.2.5",
     "tailwindcss": "^3.4.6",
     "typescript": "5.4.5"
-  },
-  "keywords": [
-    "nextjs",
-    "wagmi",
-    "viem",
-    "web3",
-    "boilerplate",
-    "chakra-ui",
-    "rainbowkit",
-    "ethereum-dapp",
-    "ethereum-boilerplate",
-    "ethereum-dapp",
-    "web3-boilerplate",
-    "web3-dapp"
-  ]
+  }
 }

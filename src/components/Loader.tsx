@@ -2,16 +2,18 @@
 
 import Image from "next/image";
 import { RxCross2 } from "react-icons/rx";
-import { useDispatch, useSelector } from "react-redux";
 
-import { setLoader } from "@/app/lib/features/loaderSlice";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
+import { useAppSelector, useAppDispatch } from "@/lib/hooks";
 
 import spinner from "../../public/icons/spinner.png";
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
 const Loader = () => {
-  const { loading, text1, text2 } = useSelector((state: any) => state.loader);
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+
+  const { loading, text1, text2 } = useAppSelector((state) => state.loader);
+
   const clearLoader = () => {
     dispatch(
       setLoader({
@@ -21,6 +23,7 @@ const Loader = () => {
       }),
     );
   };
+
   return (
     <>
       {loading && (

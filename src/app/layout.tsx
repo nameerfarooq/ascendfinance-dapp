@@ -1,32 +1,30 @@
 "use client";
+
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 // import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import Image from "next/image";
 import { GiHamburgerMenu } from "react-icons/gi";
 
+import "@/styles/globals.scss";
+import { Providers } from "@/app/providers";
 import Loader from "@/components/Loader";
 import Sidebar from "@/components/Sidebar";
 
-import { Providers } from "./providers";
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
-import "@/styles/globals.scss";
 
-import "@rainbow-me/rainbowkit/styles.css";
 
 const manrope = Manrope({ subsets: ["latin"] });
 
 // export const metadata: Metadata = {
 //   title: "Ascend Finance",
-//   applicationName: "Ascend Finance",
-//   description: "Ascend Finance protocol",
-//   authors: {
-//     name: "boris",
-//     url: "https://github.com/borisascend/ascendfinance-frontend",
-//   },
+//   applicationName: "ascendfinance-frontend",
+//   description:
+//     "Base-native, Interest-bearing stablecoin. Earn real yield by holding $GREEN, the Base-native stablecoin which is overcollateralized by Liquid Staking Tokens.",
 //   icons: "favicon.ico",
 //   manifest: "site.webmanifest",
 // };
