@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState, type ChangeEvent } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
@@ -8,6 +8,7 @@ import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import vaultsList from "@/constants/vaults";
+import { useDebounce } from "@/hooks";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
@@ -22,13 +23,20 @@ const MintPage = () => {
 
   const activeVault = useAppSelector((state) => state.vault.activeVault);
 
-  const [showVaults, setshowVaults] = useState(false);
-  const [zap, setZap] = useState(0);
-  const [debt, setDebt] = useState(0);
+  const [showVaults, setshowVaults] = useState<boolean>(false);
+  const [zap, setZap] = useState<0 | 1 | 2>(0);
+  const [depositAmount, setDepositAmount] = useState<string>("0");
+  const [mintAmount, setMintAmount] = useState<string>("0");
+  const [isDebtRatioAuto, setIsDebtRatioAuto] = useState<boolean>(true);
+  const [collateralRatio, setCollateralRatio] = useState<string>(
+    process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0",
+  );
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId = getDefaultChainId(chain);
+
+  const debouncedDepositAmount = useDebounce(depositAmount, 500);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -47,6 +55,42 @@ const MintPage = () => {
   const setActiveVaultFunc = (vault: VaultType) => {
     dispatch(setActiveVault(vault));
   };
+
+  const setDepositToMax = () => {
+    // Button The Max Token Balance Amount Fetched
+    setDepositAmount("0");
+  };
+
+  const setMintToMax = () => {
+    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
+    const mintAmount = parseFloat(depositAmount) / collateralRatioProportion;
+    setMintAmount(mintAmount.toString());
+  };
+
+  const debtRatioStateChanger = (isAuto: boolean) => {
+    setIsDebtRatioAuto(isAuto);
+    setCollateralRatio(process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0");
+  };
+
+  const handleDepositInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { value } = event.target;
+    setDepositAmount(value);
+  };
+
+  const handleMintInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { value } = event.target;
+    setMintAmount(value);
+  };
+
+  const handleCollateralRatioChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const { value } = event.target;
+    setCollateralRatio(value);
+  };
+
+  useEffect(() => {
+    setMintToMax()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedDepositAmount])
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -140,7 +184,7 @@ const MintPage = () => {
             <div className="flex justify-between items-center">
               <p className="font-medium text-[12px] leading-[24px]">Deposit</p>
               <p className="font-medium text-[12px] leading-[24px]">
-                Wallet: <span className="font-extrabold"> 2.03</span> weETH
+                Wallet: <span className="font-extrabold">0</span> {activeVault.token.symbol}
               </p>
             </div>
 
@@ -148,11 +192,15 @@ const MintPage = () => {
               <input
                 type="number"
                 placeholder="1.000 weETH"
+                value={depositAmount}
+                onChange={handleDepositInputChange}
                 className="bg-transparent placeholder:text-lightGray outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
               />
               <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-                <p>= $3 929.00</p>
-                <button className="font-bold">Max</button>
+                <p>= $0.00</p>
+                <button type="button" onClick={setDepositToMax} className="font-bold">
+                  Max
+                </button>
               </div>
             </div>
           </div>
@@ -180,21 +228,24 @@ const MintPage = () => {
               <div className="flex justify-between items-center">
                 <div className="rounded-2xl bg-secondaryColor flex items-center w-[160px]">
                   <div
-                    onClick={() => setDebt(0)}
-                    className={`${debt == 0 && "bg-lightGray text-white"} font-medium text-[12px] leading-[24px] cursor-pointer text-lightGray rounded-2xl p-2 text-center flex-1 items-center justify-center`}
+                    onClick={() => debtRatioStateChanger(true)}
+                    className={`${isDebtRatioAuto && "bg-lightGray text-white"} font-medium text-[12px] leading-[24px] cursor-pointer text-lightGray rounded-2xl p-2 text-center flex-1 items-center justify-center`}
                   >
                     Auto
                   </div>
                   <div
-                    onClick={() => setDebt(1)}
-                    className={`${debt == 1 && "bg-lightGray text-white"} font-medium text-[12px] leading-[24px] cursor-pointer text-lightGray rounded-2xl p-2 text-center flex-1 items-center justify-center`}
+                    onClick={() => debtRatioStateChanger(false)}
+                    className={`${!isDebtRatioAuto && "bg-lightGray text-white"} font-medium text-[12px] leading-[24px] cursor-pointer text-lightGray rounded-2xl p-2 text-center flex-1 items-center justify-center`}
                   >
                     Custom
                   </div>
                 </div>
+
                 <input
                   type="text"
-                  defaultValue={"130%"}
+                  value={collateralRatio}
+                  disabled={isDebtRatioAuto}
+                  onChange={handleCollateralRatioChange}
                   className="bg-secondaryColor outline-none  rounded-2xl w-[60px] sm:w-[150px] py-2 px-6 flex justify-center items-center text-white text-center"
                 />
               </div>
@@ -207,10 +258,14 @@ const MintPage = () => {
                 <input
                   type="number"
                   placeholder="1.000 weETH"
+                  value={mintAmount}
+                  onChange={handleMintInputChange}
                   className="placeholder:text-lightGray bg-transparent outline-none border-none font-medium text-[14px] sm:text-[18px] leading-[36px] w-[130px] sm:w-auto"
                 />
                 <div className="flex items-center gap-28 font-medium text-[14px] leading-[28px]">
-                  <button className="font-bold text-lightGray">Max</button>
+                  <button type="button" onClick={setMintToMax} className="font-bold text-lightGray">
+                    Max
+                  </button>
                 </div>
               </div>
             </div>
