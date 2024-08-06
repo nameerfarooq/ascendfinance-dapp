@@ -85,14 +85,14 @@ const MintPage = () => {
               </div>
 
               {showVaults && (
-                <div className="absolute z-30 bg-secondaryColor -bottom-[105px] left-0 w-full border rounded-2xl border-[#647594]">
+                <div className="absolute z-30 bg-secondaryColor top-[90px] left-0 w-full border rounded-2xl border-[#647594]">
                   {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
                     <Fragment key={vaultId}>
                       <div
                         onClick={() =>
                           setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
                         }
-                        className="flex items-center py-2 px-8 gap-3 rounded-t-2xl hover:bg-primaryColor"
+                        className="flex items-center py-2 px-8 gap-3 rounded-2xl hover:bg-primaryColor"
                       >
                         <Image
                           src={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
@@ -192,11 +192,15 @@ const MintPage = () => {
                     Custom
                   </div>
                 </div>
-                <input
-                  type="text"
-                  defaultValue={"130%"}
-                  className="bg-secondaryColor outline-none  rounded-2xl w-[60px] sm:w-[150px] py-2 px-6 flex justify-center items-center text-white text-center"
-                />
+                <div className="bg-secondaryColor outline-none  rounded-2xl w-[60px] sm:w-[150px] flex justify-center items-center text-white text-center">
+                  <input
+                    type="number"
+                    defaultValue={"130"}
+                    max={200}
+                    className="bg-transparent outline-none  w-[80px] py-2 px-6 text-white text-center"
+                  />
+                  <p>%</p>
+                </div>
               </div>
             </div>
 
