@@ -2,8 +2,14 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 import vaultsList from "@/constants/vaults";
 import type { VaultType } from "@/types";
+import { getDefaultChainId } from "@/utils/chain";
 
-const defaultVault = vaultsList[Object.keys(vaultsList)[0]];
+const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+const nativeVaultsList = vaultsList[appBuildEnvironment];
+const defaultChainId = getDefaultChainId(undefined);
+
+const defaultVault =
+  nativeVaultsList[defaultChainId][Object.keys(nativeVaultsList[defaultChainId])[0]];
 
 // Define a type for the slice state
 interface VaultSliceState {
