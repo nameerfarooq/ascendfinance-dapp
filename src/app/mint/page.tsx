@@ -9,6 +9,7 @@ import { useAccount } from "wagmi";
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import vaultsList from "@/constants/vaults";
 import { useDebounce } from "@/hooks";
+import useERC20Contract from "@/hooks/useReadBalance";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
@@ -18,8 +19,15 @@ import { getDefaultChainId } from "@/utils/chain";
 import mintIcon from "../../../public/icons/mintIcon.svg";
 
 const MintPage = () => {
-  const { chain } = useAccount();
+  const { address, chain } = useAccount();
   const dispatch = useAppDispatch();
+  const result = useERC20Contract("0xF0F058e935a2a43F72840F8146FE505D8E0d782D");
+
+  console.log("result: ", result)
+
+  result?.read
+    ?.balanceOf([address])
+    .then((balance) => console.log(balance));
 
   const activeVault = useAppSelector((state) => state.vault.activeVault);
 
