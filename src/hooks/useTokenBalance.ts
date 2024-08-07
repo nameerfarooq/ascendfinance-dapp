@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getBalance } from "@wagmi/core";
+import type { Address } from "viem";
 import { useAccount } from "wagmi";
 
 import { wagmiConfig } from "@/wagmi";
@@ -9,7 +10,7 @@ interface UseTokenBalanceResult {
   fetchTokenBalance: string | bigint | null;
 }
 
-export const useTokenBalance = (tokenAddress: any): UseTokenBalanceResult => {
+export const useTokenBalance = (tokenAddress: Address): UseTokenBalanceResult => {
   const { address } = useAccount();
   const [balance, setBalance] = useState<string | bigint | null>(null);
 
