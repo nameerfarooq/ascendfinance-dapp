@@ -17,12 +17,6 @@ const getContractInstance = (contractAddress: Address, contractABI: Abi) => {
     throw Error(`Invalid 'contractAddress' parameter '${contractAddress}'.`);
   }
 
-  // if (!publicClient) {
-  //   console.log("publicClient not found");
-  // } else {
-  //   console.log("publicClient Found: ", publicClient);
-  // }
-
   if (publicClient && contractAddress && contractABI) {
     const walletClient = createWalletClient({
       chain: publicClient.chain,
