@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address } from "viem";
+import { type Address } from "viem";
 import { readContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
@@ -15,7 +15,7 @@ export const useSortedTroves = (): {
     NICR: bigint,
     prevId: Address,
     nextId: Address,
-  ) => Promise<Address[] | void>;
+  ) => Promise<Address[]>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -25,7 +25,7 @@ export const useSortedTroves = (): {
       NICR: bigint,
       prevId: Address,
       nextId: Address,
-    ): Promise<Address[] | void> => {
+    ): Promise<Address[]> => {
       try {
         if (
           isConnected &&
@@ -36,12 +36,7 @@ export const useSortedTroves = (): {
           prevId &&
           nextId
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const result = await readContract(walletClient, {
+          const result = await readContract(publicClient, {
             abi: SortedTroves_ABI.abi,
             account: address,
             address: sortedTrovesAddress,
@@ -50,9 +45,21 @@ export const useSortedTroves = (): {
           });
 
           return result as Address[];
+        } else {
+          console.log("123", {
+            isConnected,
+            address,
+            publicClient,
+            sortedTrovesAddress,
+            NICR,
+            prevId,
+            nextId,
+          });
+          return ["0x"];
         }
       } catch (error) {
         console.log("findInsertPosition(): ", error);
+        return ["0x"];
       }
     },
     [isConnected, address],
