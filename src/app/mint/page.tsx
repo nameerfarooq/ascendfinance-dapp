@@ -21,6 +21,30 @@ const MintPage = () => {
   const { chain } = useAccount();
   const dispatch = useAppDispatch();
 
+  // const { balanceOf, allowance, approve } = useERC20Contract();
+
+  // if (address) {
+  //   balanceOf("0xF0F058e935a2a43F72840F8146FE505D8E0d782D", address).then((balance) => {
+  //     console.log("balance: ", balance);
+  //   });
+
+  //   allowance(
+  //     "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
+  //     address,
+  //     "0x025e42154A599Aef85908edCa4F8Ac0f1a31b5f2",
+  //   ).then((allowance) => {
+  //     console.log("allowance: ", allowance);
+  //   });
+
+  //   approve(
+  //     "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
+  //     "0x025e42154A599Aef85908edCa4F8Ac0f1a31b5f2",
+  //     1n,
+  //   ).then((hash) => {
+  //     console.log("approve hash : ", hash);
+  //   });
+  // }
+
   const activeVault = useAppSelector((state) => state.vault.activeVault);
 
   const [showVaults, setshowVaults] = useState<boolean>(false);
