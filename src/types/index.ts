@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 
 interface Token {
-  address: string;
+  address: Address;
   chainId?: number;
   name: string;
   symbol: string;

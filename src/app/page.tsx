@@ -6,7 +6,6 @@ import { useAccount } from "wagmi";
 
 import VaultCard from "@/components/VaultCard";
 import vaultsList from "@/constants/vaults";
-import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppDispatch } from "@/lib/hooks";
 import type { VaultType } from "@/types";
@@ -15,8 +14,6 @@ import { getDefaultChainId } from "@/utils/chain";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
-  const { fetchTokenBalance } = useTokenBalance("0xF0F058e935a2a43F72840F8146FE505D8E0d782D");
-  console.log("fetchTokenBalance : ", fetchTokenBalance);
   const router = useRouter();
   const { chain } = useAccount();
   const dispatch = useAppDispatch();
