@@ -1,7 +1,7 @@
 "use client";
 interface ButtonStyle1Props {
   text: string;
-  action: () => {};
+  action: () => void;
   disabled: boolean;
 }
 const ButtonStyle1: React.FC<ButtonStyle1Props> = ({ text, action, disabled }) => {

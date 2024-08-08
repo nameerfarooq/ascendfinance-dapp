@@ -10,7 +10,7 @@ interface PositionCardProps {
   collateral: string;
   mintedValue: string;
   collateralRatio: string;
-  ManageAction: () => {};
+  ManageAction: () => void;
 }
 const PositionCard: React.FC<PositionCardProps> = ({
   icon,

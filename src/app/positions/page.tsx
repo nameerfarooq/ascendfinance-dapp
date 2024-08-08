@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 import PositionCard from "@/components/PositionCard";
 
 import ezETHIcon from "../../../public/icons/ezETH.svg";
 import postionsIcon from "../../../public/icons/positionsIcon.svg";
 import weETHIcon from "../../../public/icons/weETH.svg";
-import { useRouter } from "next/navigation";
 
 const Page = () => {
   const router = useRouter()
