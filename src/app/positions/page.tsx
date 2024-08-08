@@ -9,9 +9,17 @@ import PositionCard from "@/components/PositionCard";
 import ezETHIcon from "../../../public/icons/ezETH.svg";
 import postionsIcon from "../../../public/icons/positionsIcon.svg";
 import weETHIcon from "../../../public/icons/weETH.svg";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
+  const router = useRouter()
   const [positionsAvailable, setpositionsAvailable] = useState(false);
+  const goToManagePositions = () => {
+    console.log("1111")
+    router.push('/positions/manage-positions')
+    console.log("2222")
+  }
+
   useEffect(() => {
     setpositionsAvailable(true);
   }, []);
@@ -37,55 +45,55 @@ const Page = () => {
         </div>
         <hr className="border-lightGray2" />
 
-          <div className="py-10 px-6 sm:px-12 flex flex-col gap-8">
-            {!positionsAvailable ? (
-              <div className="h-[250px] w-full flex items-center justify-center">
-                <p className="font-bold text-[18px] leading-[36px]">
-                  You currently have no positions.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="gap-4 lg:px-12 hidden sm:flex items-center justify-around px-6 sm:px-12 ">
-                  <div className="flex-[2] text-center">
-                    Vault
-                  </div>
-                  <div className="flex-1 text-center">
-                    Collateral
-                  </div>
-                  <div className="flex-1 text-center">
-                    Minted
-                  </div>
-                  <div className="flex-1 text-center">
-                    CR
-                  </div>
-                  <div className="flex-1">
-
-                  </div>
+        <div className="py-10 px-6 sm:px-12 flex flex-col gap-8">
+          {!positionsAvailable ? (
+            <div className="h-[250px] w-full flex items-center justify-center">
+              <p className="font-bold text-[18px] leading-[36px]">
+                You currently have no positions.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="gap-4 lg:px-12 hidden sm:flex items-center justify-around px-6 sm:px-12 ">
+                <div className="flex-[2] text-center">
+                  Vault
                 </div>
-                <PositionCard
-                  icon={weETHIcon}
-                  symbol="weETH"
-                  tokenName="EtherFi Restaked Ether"
-                  collateral="1.500 weETH"
-                  mintedValue="2930.28 BLUE"
-                  collateralRatio="129%"
-                  ManageAction={async () => { }}
-                />
-                <PositionCard
-                  icon={ezETHIcon}
-                  symbol="ezETH"
-                  tokenName="Renzo Restaked Ether"
-                  collateral="3.543 ezETH"
-                  mintedValue="12 930.93 BLUE"
-                  collateralRatio="339%"
-                  ManageAction={async () => { }}
-                />
-              </>
-            )}
-          </div>
+                <div className="flex-1 text-center">
+                  Collateral
+                </div>
+                <div className="flex-1 text-center">
+                  Minted
+                </div>
+                <div className="flex-1 text-center">
+                  CR
+                </div>
+                <div className="flex-1">
+
+                </div>
+              </div>
+              <PositionCard
+                icon={weETHIcon}
+                symbol="weETH"
+                tokenName="EtherFi Restaked Ether"
+                collateral="1.500 weETH"
+                mintedValue="2930.28 BLUE"
+                collateralRatio="129%"
+                ManageAction={async () => { goToManagePositions() }}
+              />
+              <PositionCard
+                icon={ezETHIcon}
+                symbol="ezETH"
+                tokenName="Renzo Restaked Ether"
+                collateral="3.543 ezETH"
+                mintedValue="12 930.93 BLUE"
+                collateralRatio="339%"
+                ManageAction={async () => { goToManagePositions() }}
+              />
+            </>
+          )}
         </div>
       </div>
+    </div>
   );
 };
 

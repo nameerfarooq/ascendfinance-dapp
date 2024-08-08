@@ -3,7 +3,6 @@ import React from "react";
 import Image from "next/image";
 
 import ButtonStyle1 from "./Buttons/ButtonStyle1";
-import ButtonStyle2 from "./Buttons/ButtonStyle2";
 interface PositionCardProps {
   icon: string;
   symbol: string;
@@ -11,7 +10,7 @@ interface PositionCardProps {
   collateral: string;
   mintedValue: string;
   collateralRatio: string;
-  ManageAction: () => Promise<void>;
+  ManageAction: () => {};
 }
 const PositionCard: React.FC<PositionCardProps> = ({
   icon,
