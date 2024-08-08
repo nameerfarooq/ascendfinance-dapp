@@ -49,7 +49,7 @@ const PositionCard: React.FC<PositionCardProps> = ({
           <ButtonStyle1 text="Manage >" action={ManageAction} disabled={false} />
         </div>
       </div>
-      <div className="hidden sm:flex items-center justify-around gap-4 bg-secondaryColor py-6 px-6 lg:px-12 rounded-2xl">
+      <div className="hidden sm:flex items-center justify-around gap-4 bg-secondaryColor hover:bg-lightGray py-6 px-6 lg:px-12 rounded-2xl">
         <div className="flex items-center gap-4 flex-[2]">
           <Image alt="Coin symbol" src={icon} width={50} />
           <div className="flex flex-col">
@@ -57,8 +57,8 @@ const PositionCard: React.FC<PositionCardProps> = ({
             <p className="font-medium text-[12px]">{tokenName}</p>
           </div>
         </div>
-        <div className="flex-1 text-center text-[12px] text-lightGray font-bold">{collateral}</div>
-        <div className="flex-1 text-center text-[12px] text-lightGray font-bold">{mintedValue}</div>
+        <div className="flex-1 text-center text-[12px]  font-bold">{collateral}</div>
+        <div className="flex-1 text-center text-[12px] font-bold">{mintedValue}</div>
         <div className="flex-1 text-center text-[12px] text-primaryColor font-medium">
           {collateralRatio}
         </div>
