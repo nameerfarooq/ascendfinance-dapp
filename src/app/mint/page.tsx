@@ -45,11 +45,14 @@ const MintPage = () => {
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   // const [tokenAllowance, setTokenAllowance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
+  const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId = getDefaultChainId(chain);
   const debouncedDepositAmount = useDebounce(depositAmount, 500);
+  const debouncedMintAmount = useDebounce(mintAmount, 500);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -251,8 +254,36 @@ const MintPage = () => {
     }
   };
 
+  const validateDeposit = () => {
+    let isValid = false;
+    const amount = parseFloat(depositAmount);
+    if (amount > 0 && amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))) {
+      isValid = true;
+    }
+
+    setIsDepositValid(isValid);
+  };
+
+  const validateMint = () => {
+    let isValid = false;
+
+    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
+    const maxMintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+
+    const amount = parseFloat(mintAmount);
+    if (amount > 0 && amount <= maxMintAmount) {
+      isValid = true;
+    }
+
+    setIsMintValid(isValid);
+  };
+
   useEffect(() => {
-    setMintToMax();
+    validateDeposit();
+
+    if (isDebtRatioAuto) {
+      setMintToMax();
+    }
 
     if (address && chain) {
       const borrowerOperationsAddress: Address =
@@ -260,7 +291,12 @@ const MintPage = () => {
       fetchTokenAllowance(activeVault.token.address, address, borrowerOperationsAddress);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedDepositAmount]);
+  }, [debouncedDepositAmount, isDebtRatioAuto]);
+
+  useEffect(() => {
+    validateMint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedMintAmount]);
 
   useEffect(() => {
     if (address) {
@@ -457,9 +493,13 @@ const MintPage = () => {
 
           <div className="mt-8">
             <ButtonStyle1
+              disabled={
+                !isAllowanceEnough
+                  ? !isDepositValid || !isConnected
+                  : !isDepositValid || !isMintValid || !isConnected
+              }
               text={isAllowanceEnough ? "Mint" : "Approve"}
               action={handleCtaFunctions}
-              disabled={false}
             />
           </div>
         </div>
