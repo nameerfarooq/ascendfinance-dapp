@@ -7,7 +7,6 @@ import { IoCloseSharp } from "react-icons/io5";
 import HorizontalLine from "./HorizontalLine";
 import SidebarBtn from "./SidebarBtn";
 import earnIcon from "../../public/icons/earnIcon.svg";
-import mintIcon from "../../public/icons/mintIcon.svg";
 import positionsIcon from "../../public/icons/positionsIcon.svg";
 import redeemIcon from "../../public/icons/redeemIcon.svg";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
@@ -69,7 +68,6 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
               }}
             >
               <SidebarBtn icon={vaultsIcon} text="vaults" link="/" />
-              <SidebarBtn icon={mintIcon} text="mint" link="/mint" />
               <SidebarBtn icon={positionsIcon} text="positions" link="/positions" />
               <SidebarBtn icon={redeemIcon} text="redeem" link="/redeem" />
               <SidebarBtn icon={earnIcon} text="earn" link="/earn" />

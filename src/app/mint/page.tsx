@@ -1,15 +1,16 @@
 "use client";
 
-import { Fragment, useEffect, useState, type ChangeEvent } from "react";
+import {  useEffect, useState, type ChangeEvent } from "react";
 
 import Image from "next/image";
-import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useRouter } from "next/navigation";
+// import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
 import { formatUnits, parseEther, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
-import vaultsList from "@/constants/vaults";
+// import vaultsList from "@/constants/vaults";
 import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useERC20Contract from "@/hooks/useERC20Contract";
@@ -17,16 +18,18 @@ import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
-import { setActiveVault } from "@/lib/features/vault/vaultSlice";
+// import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
-import type { VaultType } from "@/types";
-import { getDefaultChainId } from "@/utils/chain";
+// import type { VaultType } from "@/types";
+// import { getDefaultChainId } from "@/utils/chain";
 
+import goBackIcon from "../../../public/icons/goBackIcon.svg";
 import mintIcon from "../../../public/icons/mintIcon.svg";
 
 const MintPage = () => {
   const { isConnected, chain, address } = useAccount();
   const dispatch = useAppDispatch();
+  const router = useRouter()
   const activeVault = useAppSelector((state) => state.vault.activeVault);
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount } = useTroveManager();
@@ -49,8 +52,8 @@ const MintPage = () => {
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const nativeVaultsList = vaultsList[appBuildEnvironment];
-  const defaultChainId = getDefaultChainId(chain);
+  // const nativeVaultsList = vaultsList[appBuildEnvironment];
+  // const defaultChainId = getDefaultChainId(chain);
   const debouncedDepositAmount = useDebounce(depositAmount, 500);
   const debouncedMintAmount = useDebounce(mintAmount, 500);
 
@@ -68,9 +71,9 @@ const MintPage = () => {
     );
   };
 
-  const setActiveVaultFunc = (vault: VaultType) => {
-    dispatch(setActiveVault(vault));
-  };
+  // const setActiveVaultFunc = (vault: VaultType) => {
+  //   dispatch(setActiveVault(vault));
+  // };
 
   const setDepositToMax = () => {
     const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
@@ -307,7 +310,10 @@ const MintPage = () => {
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
-      <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[80%] md:w-[70%] lg:w-[55%]  xl:w-[48%]">
+      <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[80%] md:w-[70%] lg:w-[55%]  xl:w-[48%]">
+        <div onClick={() => { router.push('/positions') }} className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor">
+          <Image src={goBackIcon} alt='Go back Icon' className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain" />
+        </div>
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
             <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />
@@ -331,7 +337,7 @@ const MintPage = () => {
               className="flex flex-col gap-3 w-10/12 sm:w-4/12 cursor-pointer relative"
             >
               <p className="font-medium text-[12px] leading-[24px]">Vault</p>
-              <div className="rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center">
+              {/* <div className="rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center">
                 <div className="flex items-center gap-3">
                   <Image src={activeVault?.token?.logoURI || ""} width={30} alt="token icon" />
                   <p className="font-bold text-[18px] leading-[36px]">
@@ -339,9 +345,15 @@ const MintPage = () => {
                   </p>
                 </div>
                 {showVaults ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
+              </div> */}
+              <div className="flex gap-6 items-center">
+                <Image src={activeVault?.token?.logoURI || ""} alt="icon" width={55} />
+                <div className="flex flex-col gap-0">
+                  <p className="font-bold text-[24px] leading-[28px]">{activeVault?.token?.symbol || ""}</p>
+                  <p className="font-medium text-[12px] leading-[24px]">{activeVault?.token?.name || ""}</p>
+                </div>
               </div>
-
-              {showVaults && (
+              {/* {showVaults && (
                 <div className="absolute z-30 bg-secondaryColor top-[90px] left-0 w-full border rounded-2xl border-[#647594]">
                   {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
                     <Fragment key={vaultId}>
@@ -363,7 +375,7 @@ const MintPage = () => {
                     </Fragment>
                   ))}
                 </div>
-              )}
+              )} */}
             </div>
 
             <div className="flex flex-col gap-3 w-10/12 sm:w-5/12 cursor-pointer relative">
@@ -458,7 +470,7 @@ const MintPage = () => {
                   </div>
                 </div>
 
-                <div className="bg-secondaryColor outline-none  rounded-2xl w-[60px] sm:w-[150px] flex justify-center items-center text-white text-center">
+                <div className="bg-secondaryColor outline-none  rounded-2xl w-[130px] sm:w-[150px] flex justify-center items-center text-white text-center">
                   <input
                     type="number"
                     value={collateralRatio}
@@ -491,15 +503,21 @@ const MintPage = () => {
             </div>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 flex gap-4">
             <ButtonStyle1
               disabled={
                 !isAllowanceEnough
                   ? !isDepositValid || !isConnected
                   : !isDepositValid || !isMintValid || !isConnected
               }
-              text={isAllowanceEnough ? "Mint" : "Approve"}
+              // text={isAllowanceEnough ? "Mint" : "Approve"}
+              text={isAllowanceEnough ? "Mint" : "Approve weETH"}
               action={handleCtaFunctions}
+            />
+            <ButtonStyle1
+              disabled={false}
+              text={"Deposit"}
+              action={() => { }}
             />
           </div>
         </div>
