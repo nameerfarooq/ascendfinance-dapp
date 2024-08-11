@@ -22,11 +22,13 @@ const Page = () => {
     const [tab, setTab] = useState(0)
     return (
         <div className='flex items-center justify-center min-h-full w-full'>
-            <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[0px] md:w-[70%] xl:w-[45%]  2xl:w-[35%]">
-                <div onClick={() => { router.push('/positions') }} className="absolute -left-[115px] shadow-xl top-0 rounded-full p-10 bg-baseColor cursor-pointer hover:bg-primaryColor">
-                    <Image src={goBackIcon} alt='Go back Icon' width={40} />
+            <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:w-[70%] xl:w-[45%]  2xl:w-[35%]">
+                <div onClick={() => { router.push('/positions') }} className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor">
+
+
+                    <Image src={goBackIcon} alt='Go back Icon' className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain" />
                 </div>
-                <div className="pt-6 pb-16 px-12">
+                <div className="pt-6 pb-16 px-4 sm:px-12">
                     <div className="flex items-center gap-3">
                         <Image
                             alt="Positions icon"
@@ -34,14 +36,14 @@ const Page = () => {
                             width={36}
                             className="brightness-0 invert"
                         />
-                        <p className="font-bold leading-[60px] text-[30px] text-white">Manage position</p>
+                        <p className="font-bold leading-[40px] sm:leading-[60px] text-[20px] sm:text-[30px] text-white">Manage position</p>
                     </div>
                     <p className="text-[14px] leading-[24px]">
                         By managing your collateral ratio, you will reduce your exposure to price fluctuations and risk of liquidation.   </p>
                 </div>
                 <hr className="border-lightGray2" />
-                <div className="py-12 px-12">
-                    <div className="flex justify-between gap-3 items-center">
+                <div className="py-12 px-4 sm:px-12">
+                    <div className="flex justify-between gap-3 items-center flex-wrap ">
 
                         <div className="flex items-center gap-2">
                             <Image alt="Coin symbol" src={weETHIcon} width={50} />

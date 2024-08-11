@@ -17,9 +17,9 @@ const DepositPosition = () => {
     return (
         <div className="flex flex-col gap-12 pt-12">
             <div className='flex flex-col gap-2'>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between sm:items-center flex-col sm:flex-row gap-4">
                     <p className='font-medium text-[12px] leading-[24px]'>Deposit weETH</p>
-                    <div className="flex w-6/12 gap-4 items-center">
+                    <div className="flex w-full sm:w-6/12 gap-4 items-center">
                         <p className="font-medium text-[12px] leading-[24px] flex gap-3 items-center">Zap <ToolTip text='Tooltip text goes here with additional information about the item.' /> </p>
                         <div className="rounded-2xl bg-secondaryColor flex items-center w-full">
                             <div
@@ -60,8 +60,8 @@ const DepositPosition = () => {
             </div>
 
             <div className="text-[12px] text-lightGray font-medium leading-[24px]">
-                <div className={`${zap > 0 ? "h-[60px] opacity-100" : "opacity-0 h-0 overflow-hidden"} smooth-transition`}>
-                    <div className="flex items-center justify-between gap-3">
+                <div className={`${zap > 0 ? "h-[100px] sm:h-[60px] opacity-100" : "opacity-0 h-0 overflow-hidden"} smooth-transition`}>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
                         <p>Exchange rate</p>
                         <p>(1,16495) 1.00 ETH to 0.85 weETH</p>
                     </div>

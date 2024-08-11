@@ -18,7 +18,7 @@ const SidebarBtn: React.FC<SidebarBtnProps> = ({ icon, text, link }) => {
   useEffect(() => {
     if (pathname === text) {
       setisActive(true);
-    } else if (text === "vaults" && pathname === "") {
+    } else if (text === "vaults" && (pathname === ""  || pathname === "mint")) {
       setisActive(true);
     } else {
       setisActive(false);
@@ -32,9 +32,8 @@ const SidebarBtn: React.FC<SidebarBtnProps> = ({ icon, text, link }) => {
         <Image
           src={icon}
           alt={`${text} icon`}
-          className={`group-hover:filter group-hover:invert group-hover:brightness-0 ${
-            isActive ? "filter invert brightness-0" : ""
-          }`}
+          className={`group-hover:filter group-hover:invert group-hover:brightness-0 ${isActive ? "filter invert brightness-0" : ""
+            }`}
         />
         <span className={`${isActive && "text-white"} text-lightGray text-1 group-hover:text-white `}>{text}</span>
       </div>
