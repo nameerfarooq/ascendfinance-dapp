@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address } from "viem";
+import { type Address } from "viem";
 import { readContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
@@ -14,17 +14,14 @@ export const useMultiCollateralHintHelpers = (): {
     multiCollateralHintHelpersAddress: Address,
     collateralAmount: bigint,
     debtAmount: bigint,
-  ) => Promise<bigint | void>;
+  ) => Promise<bigint>;
   getApproxHint: (
     multiCollateralHintHelpersAddress: Address,
     troveManagerAddress: Address,
     NICR: bigint,
-    numTrial: bigint,
+    numTrial: string,
     inputRandomSeed: bigint,
-  ) => Promise<{
-    hintAddress: Address;
-    diff: bigint;
-  } | void>;
+  ) => Promise<[Address, bigint]>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -33,7 +30,7 @@ export const useMultiCollateralHintHelpers = (): {
       multiCollateralHintHelpersAddress: Address,
       collateralAmount: bigint,
       debtAmount: bigint,
-    ): Promise<bigint | void> => {
+    ): Promise<bigint> => {
       try {
         if (
           isConnected &&
@@ -43,12 +40,7 @@ export const useMultiCollateralHintHelpers = (): {
           collateralAmount &&
           debtAmount
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const NICR = await readContract(walletClient, {
+          const NICR = await readContract(publicClient, {
             abi: MultiCollateralHintHelpers_ABI.abi,
             account: address,
             address: multiCollateralHintHelpersAddress,
@@ -57,9 +49,12 @@ export const useMultiCollateralHintHelpers = (): {
           });
 
           return NICR as bigint;
+        } else {
+          return 0n;
         }
       } catch (error) {
         console.log("computeNominalCR(): ", error);
+        return 0n;
       }
     },
     [isConnected, address],
@@ -70,12 +65,9 @@ export const useMultiCollateralHintHelpers = (): {
       multiCollateralHintHelpersAddress: Address,
       troveManagerAddress: Address,
       NICR: bigint,
-      numTrial: bigint,
+      numTrial: string,
       inputRandomSeed: bigint,
-    ): Promise<{
-      hintAddress: Address;
-      diff: bigint;
-    } | void> => {
+    ): Promise<[Address, bigint]> => {
       try {
         if (
           isConnected &&
@@ -87,12 +79,7 @@ export const useMultiCollateralHintHelpers = (): {
           numTrial &&
           inputRandomSeed
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const result = await readContract(walletClient, {
+          const result = await readContract(publicClient, {
             abi: MultiCollateralHintHelpers_ABI.abi,
             account: address,
             address: multiCollateralHintHelpersAddress,
@@ -100,13 +87,13 @@ export const useMultiCollateralHintHelpers = (): {
             args: [troveManagerAddress, NICR, numTrial, inputRandomSeed],
           });
 
-          return result as {
-            hintAddress: Address;
-            diff: bigint;
-          };
+          return result as [Address, bigint];
+        } else {
+          return ["0x", 0n];
         }
-      } catch (error) {
+      } catch (error: any) {
         console.log("getApproxHint(): ", error);
+        return ["0x", 0n];
       }
     },
     [isConnected, address],

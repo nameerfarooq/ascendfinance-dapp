@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address } from "viem";
-import { readContract, writeContract } from "viem/actions";
+import { createWalletClient, custom, type Address, type TransactionReceipt } from "viem";
+import { readContract, waitForTransactionReceipt, writeContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
 import ERC20_ABI from "@/abis/ERC20.json";
@@ -57,7 +57,7 @@ export const useERC20Contract = (): {
     tokenAddress: Address,
     spenderAddress: Address,
     amount: bigint,
-  ) => Promise<string | void>;
+  ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -117,7 +117,7 @@ export const useERC20Contract = (): {
       tokenAddress: Address,
       spenderAddress: Address,
       amount: bigint,
-    ): Promise<string | void> => {
+    ): Promise<TransactionReceipt | void> => {
       try {
         if (isConnected && address && tokenAddress && spenderAddress && amount && publicClient) {
           const walletClient = createWalletClient({
@@ -133,10 +133,11 @@ export const useERC20Contract = (): {
             args: [spenderAddress, amount],
           });
 
-          return hash;
+          const tx = await waitForTransactionReceipt(publicClient, { hash })
+          return tx
         }
       } catch (error: any) {
-        console.log("approve(): ", error);
+        // console.log("approve(): ", error);
         const keys = Object.keys(error);
 
         for (const key of keys) {

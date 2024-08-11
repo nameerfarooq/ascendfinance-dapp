@@ -4,11 +4,18 @@ import { Fragment, useEffect, useState, type ChangeEvent } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { formatUnits, parseEther, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
+import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
 import { useDebounce } from "@/hooks";
+import useBorrowerOperations from "@/hooks/useBorrowerOperations";
+import useERC20Contract from "@/hooks/useERC20Contract";
+import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
+import useSortedTroves from "@/hooks/useSortedTroves";
+import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector, useAppDispatch } from "@/lib/hooks";
@@ -18,34 +25,14 @@ import { getDefaultChainId } from "@/utils/chain";
 import mintIcon from "../../../public/icons/mintIcon.svg";
 
 const MintPage = () => {
-  const { chain } = useAccount();
+  const { isConnected, chain, address } = useAccount();
   const dispatch = useAppDispatch();
-
-  // const { balanceOf, allowance, approve } = useERC20Contract();
-
-  // if (address) {
-  //   balanceOf("0xF0F058e935a2a43F72840F8146FE505D8E0d782D", address).then((balance) => {
-  //     console.log("balance: ", balance);
-  //   });
-
-  //   allowance(
-  //     "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
-  //     address,
-  //     "0x025e42154A599Aef85908edCa4F8Ac0f1a31b5f2",
-  //   ).then((allowance) => {
-  //     console.log("allowance: ", allowance);
-  //   });
-
-  //   approve(
-  //     "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
-  //     "0x025e42154A599Aef85908edCa4F8Ac0f1a31b5f2",
-  //     1n,
-  //   ).then((hash) => {
-  //     console.log("approve hash : ", hash);
-  //   });
-  // }
-
   const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const { balanceOf, allowance, approve } = useERC20Contract();
+  const { convertYieldTokensToShares, getTroveOwnersCount } = useTroveManager();
+  const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
+  const { findInsertPosition } = useSortedTroves();
+  const { openTrove } = useBorrowerOperations();
 
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
@@ -55,23 +42,28 @@ const MintPage = () => {
   const [collateralRatio, setCollateralRatio] = useState<string>(
     process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0",
   );
+  const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
+  // const [tokenAllowance, setTokenAllowance] = useState<bigint>(0n);
+  const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
+  const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId = getDefaultChainId(chain);
-
   const debouncedDepositAmount = useDebounce(depositAmount, 500);
+  const debouncedMintAmount = useDebounce(mintAmount, 500);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
   };
 
-  const setLoaderTrue = async () => {
+  const setLoaderTrue = async (loading: boolean, text1: string, text2: string) => {
     dispatch(
       setLoader({
-        loading: true,
-        text1: "Minting",
-        text2: "123123 Blue",
+        loading,
+        text1,
+        text2,
       }),
     );
   };
@@ -81,13 +73,13 @@ const MintPage = () => {
   };
 
   const setDepositToMax = () => {
-    // Button The Max Token Balance Amount Fetched
-    setDepositAmount("0");
+    const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
+    setDepositAmount(maxDepositAmount);
   };
 
   const setMintToMax = () => {
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount = parseFloat(depositAmount) / collateralRatioProportion;
+    const mintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
     setMintAmount(mintAmount.toString());
   };
 
@@ -111,10 +103,207 @@ const MintPage = () => {
     setCollateralRatio(value);
   };
 
+  const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
+    if (address) {
+      balanceOf(tokenAddress, walletAddress).then((balance) => {
+        setTokenBalance(balance);
+      });
+    }
+  };
+
+  const fetchTokenAllowance = (
+    tokenAddress: Address,
+    ownerAddress: Address,
+    spenderAddress: Address,
+  ) => {
+    if (address && depositAmount) {
+      allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
+        // console.log("allowance: ", result);
+        // setTokenAllowance(result);
+
+        if (result >= parseUnits(depositAmount, activeVault.token.decimals)) {
+          setIsAllowanceEnough(true);
+        } else {
+          setIsAllowanceEnough(false);
+        }
+      });
+    }
+  };
+
+  const getTokenApproved = async (
+    tokenAddress: Address,
+    spenderAddress: Address,
+    amount: bigint,
+  ) => {
+    if (address && depositAmount) {
+      setLoaderTrue(true, "Approval Pending", depositAmount);
+
+      await approve(tokenAddress, spenderAddress, amount).then((tx) => {
+        if (tx?.status === "success") {
+          setLoaderTrue(true, "Approval Success", depositAmount);
+          setTimeout(() => {
+            setLoaderTrue(false, "", "");
+          }, 1500);
+        }
+        fetchTokenAllowance(tokenAddress, address, spenderAddress);
+      });
+    }
+  };
+
+  const getTokenMinted = async (
+    troveManagerAddress: Address,
+    multiCollateralHintHelpersAddress: Address,
+    sortedTrovesAddress: Address,
+    borrowerOperationsAddress: Address,
+    amount: bigint,
+  ) => {
+    if (address) {
+      // Step#1
+      const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
+      console.log("sharesAmount: ", sharesAmount);
+
+      // Step#2
+      const NCIR = await computeNominalCR(
+        multiCollateralHintHelpersAddress,
+        sharesAmount,
+        parseUnits(mintAmount, activeVault.token.decimals),
+      );
+      console.log("NCIR: ", NCIR);
+
+      // Step#3
+      const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+      console.log("troveOwnersCount: ", troveOwnersCount);
+
+      // Step#4
+      const numTrials = 15 * Math.sqrt(Number(troveOwnersCount));
+      const inputRandomSeed = parseEther("10000000");
+
+      const approxHint = await getApproxHint(
+        multiCollateralHintHelpersAddress,
+        troveManagerAddress,
+        NCIR,
+        numTrials.toString(),
+        inputRandomSeed,
+      );
+      console.log("approxHint: ", approxHint);
+
+      // Step#5
+      const insertPosition = await findInsertPosition(
+        sortedTrovesAddress,
+        NCIR,
+        approxHint[0],
+        approxHint[0],
+      );
+      console.log("insertPosition: ", insertPosition);
+
+      // Step#6
+      const tx = await openTrove(
+        borrowerOperationsAddress,
+        troveManagerAddress,
+        address,
+        0n,
+        parseUnits(depositAmount, activeVault.token.decimals),
+        parseUnits(mintAmount, activeVault.token.decimals),
+        insertPosition[0],
+        insertPosition[1],
+      );
+      console.log("tx: ", tx);
+      console.log("1234: ", {
+        borrowerOperationsAddress,
+        troveManagerAddress,
+        address,
+        "0": 0n,
+        "1": parseUnits(depositAmount, activeVault.token.decimals),
+        "2": parseUnits(mintAmount, activeVault.token.decimals),
+        "3": insertPosition[0],
+        "4": insertPosition[1],
+      });
+    }
+  };
+
+  const handleCtaFunctions = () => {
+    if (address && chain) {
+      const borrowerOperationsAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+      const multiCollateralHintHelpersAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_COLLATERAL_HINT_HELPERS;
+      const sortedTrovesAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .SORTED_TROVES;
+
+      if (isAllowanceEnough) {
+        getTokenMinted(
+          troveManagerAddress,
+          multiCollateralHintHelpersAddress,
+          sortedTrovesAddress,
+          borrowerOperationsAddress,
+          parseUnits(depositAmount, activeVault.token.decimals),
+        );
+      } else {
+        getTokenApproved(
+          activeVault.token.address,
+          borrowerOperationsAddress,
+          parseUnits(depositAmount, activeVault.token.decimals),
+        );
+      }
+    } else {
+      console.log("wallet not connected.");
+    }
+  };
+
+  const validateDeposit = () => {
+    let isValid = false;
+    const amount = parseFloat(depositAmount);
+    if (amount > 0 && amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))) {
+      isValid = true;
+    }
+
+    setIsDepositValid(isValid);
+  };
+
+  const validateMint = () => {
+    let isValid = false;
+
+    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
+    const maxMintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+
+    const amount = parseFloat(mintAmount);
+    if (amount > 0 && amount <= maxMintAmount) {
+      isValid = true;
+    }
+
+    setIsMintValid(isValid);
+  };
+
   useEffect(() => {
-    setMintToMax();
+    validateDeposit();
+
+    if (isDebtRatioAuto) {
+      setMintToMax();
+    }
+
+    if (address && chain) {
+      const borrowerOperationsAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
+      fetchTokenAllowance(activeVault.token.address, address, borrowerOperationsAddress);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedDepositAmount]);
+  }, [debouncedDepositAmount, isDebtRatioAuto]);
+
+  useEffect(() => {
+    validateMint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedMintAmount]);
+
+  useEffect(() => {
+    if (address) {
+      fetchTokenbalance(activeVault.token.address, address);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address, chain, activeVault.token]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -208,14 +397,18 @@ const MintPage = () => {
             <div className="flex justify-between items-center">
               <p className="font-medium text-[12px] leading-[24px]">Deposit</p>
               <p className="font-medium text-[12px] leading-[24px]">
-                Wallet: <span className="font-extrabold">0</span> {activeVault.token.symbol}
+                Wallet:{" "}
+                <span className="font-extrabold">
+                  {formatUnits(tokenBalance, activeVault.token.decimals)}
+                </span>{" "}
+                {activeVault.token.symbol}
               </p>
             </div>
 
             <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
               <input
                 type="number"
-                placeholder="1.000 weETH"
+                placeholder={`1.000 ${activeVault.token.symbol}`}
                 value={depositAmount}
                 onChange={handleDepositInputChange}
                 className="bg-transparent placeholder:text-lightGray outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
@@ -300,11 +493,13 @@ const MintPage = () => {
 
           <div className="mt-8">
             <ButtonStyle1
-              text="Zap ETH"
-              action={async () => {
-                setLoaderTrue();
-              }}
-              disabled={false}
+              disabled={
+                !isAllowanceEnough
+                  ? !isDepositValid || !isConnected
+                  : !isDepositValid || !isMintValid || !isConnected
+              }
+              text={isAllowanceEnough ? "Mint" : "Approve"}
+              action={handleCtaFunctions}
             />
           </div>
         </div>

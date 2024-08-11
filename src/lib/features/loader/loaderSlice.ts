@@ -22,7 +22,6 @@ export const loaderSlice = createSlice({
      // Use the PayloadAction type to declare the contents of `action.payload`
     setLoader: (state, action: PayloadAction<LoaderSliceState>) => {
       const { loading, text1, text2 } = action.payload;
-      console.log(loading, text1, text2);
       state.loading = loading;
       state.text1 = text1;
       state.text2 = text2;

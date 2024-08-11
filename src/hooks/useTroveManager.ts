@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address } from "viem";
-import { readContract } from "viem/actions";
+import { type Address } from "viem";
+import { readContract, simulateContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
 import TroveManager_ABI from "@/abis/TroveManager.json";
@@ -10,24 +10,16 @@ import { wagmiConfig } from "@/wagmi";
 const publicClient = wagmiConfig.getClient();
 
 export const useTroveManager = (): {
-  convertYieldTokensToShares: (
-    troveManagerAddress: Address,
-    amount: bigint,
-  ) => Promise<bigint | void>;
-  getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint[] | void>;
+  convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
+  getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint>;
 } => {
   const { isConnected, address } = useAccount();
 
   const convertYieldTokensToShares = useCallback(
-    async (troveManagerAddress: Address, amount: bigint): Promise<bigint | void> => {
+    async (troveManagerAddress: Address, amount: bigint): Promise<bigint> => {
       try {
         if (isConnected && address && publicClient && troveManagerAddress && amount) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const sharesAmount = await readContract(walletClient, {
+          const { result } = await simulateContract(publicClient, {
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -35,25 +27,23 @@ export const useTroveManager = (): {
             args: [amount],
           });
 
-          return sharesAmount as bigint;
+          return result as bigint;
+        } else {
+          return 0n;
         }
       } catch (error) {
         console.log("convertYieldTokensToShares (): ", error);
+        return 0n;
       }
     },
     [isConnected, address],
   );
 
   const getTroveOwnersCount = useCallback(
-    async (troveManagerAddress: Address): Promise<bigint[] | void> => {
+    async (troveManagerAddress: Address): Promise<bigint> => {
       try {
         if (isConnected && address && publicClient && troveManagerAddress) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const troveOwnersCount = await readContract(walletClient, {
+          const troveOwnersCount = await readContract(publicClient, {
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -61,10 +51,13 @@ export const useTroveManager = (): {
             args: [],
           });
 
-          return troveOwnersCount as bigint[];
+          return troveOwnersCount as bigint;
+        } else {
+          return 0n;
         }
       } catch (error) {
         console.log("getTroveOwnersCount (): ", error);
+        return 0n;
       }
     },
     [isConnected, address],

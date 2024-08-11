@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address } from "viem";
-import { writeContract } from "viem/actions";
+import { createWalletClient, custom, type Address, type TransactionReceipt } from "viem";
+import { waitForTransactionReceipt, writeContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
 import BorrowerOperations_ABI from "@/abis/BorrowerOperations.json";
@@ -19,7 +19,7 @@ export const useBorrowerOperations = (): {
     debtAmount: bigint,
     upperHint: Address,
     lowerHint: Address,
-  ) => Promise<string | void>;
+  ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -33,7 +33,7 @@ export const useBorrowerOperations = (): {
       debtAmount: bigint,
       upperHint: Address,
       lowerHint: Address,
-    ): Promise<string | void> => {
+    ): Promise<TransactionReceipt | void> => {
       try {
         if (
           isConnected &&
@@ -42,7 +42,7 @@ export const useBorrowerOperations = (): {
           borrowerOperationsAddress &&
           troveManagerAddress &&
           walletAddress &&
-          maxFeePercentage &&
+          // maxFeePercentage &&
           collateralAmount &&
           debtAmount &&
           upperHint &&
@@ -69,7 +69,11 @@ export const useBorrowerOperations = (): {
             ],
           });
 
-          return hash;
+          console.log("hash: ", hash);
+
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+          return tx;
         }
       } catch (error) {
         console.log("openTrove(): ", error);
