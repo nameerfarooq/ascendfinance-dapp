@@ -1,11 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import type { Address } from "viem";
 import { useAccount } from "wagmi";
 
 import VaultCard from "@/components/VaultCard";
+import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
+import useTroveManager from "@/hooks/useTroveManager";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppDispatch } from "@/lib/hooks";
 import type { VaultType } from "@/types";
@@ -15,18 +20,40 @@ import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
   const router = useRouter();
-  const { chain } = useAccount();
+  const { isConnected, address, chain } = useAccount();
   const dispatch = useAppDispatch();
+  const { getTroveStatus } = useTroveManager();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
 
   const defaultChainId = getDefaultChainId(chain);
 
+  const [vaultStatusList, setVaultStatusList] = useState<{ [x: string]: bigint }>({});
+
   const setActiveVaultFunc = (vault: VaultType) => {
     dispatch(setActiveVault(vault));
     router.push("/mint");
   };
+
+  useEffect(() => {
+    if (isConnected && address && chain && chain.id) {
+      const vaultIds = Object.keys(nativeVaultsList[chain?.id]);
+      let vaultStatusObj = {};
+
+      vaultIds.map(async (vaultId) => {
+        const troveManagerAddress: Address =
+          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[vaultId as Address]
+            .TROVE_MANAGER;
+
+        await getTroveStatus(troveManagerAddress, address).then((status) => {
+          vaultStatusObj = { ...vaultStatusObj, [vaultId]: status };
+          setVaultStatusList(vaultStatusObj);
+        });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address, chain, nativeVaultsList, appBuildEnvironment]);
 
   return (
     <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] mx-auto mt-[70px]">
@@ -52,10 +79,18 @@ const VaultsPage = () => {
             mintedBlue="299.99k/20.00m"
             minCollateralRation="130%"
             apr="5.99% - 8.99%"
-            btnText="Choose weETH"
+            btnText={
+              vaultStatusList[vaultId] === 1n
+                ? "Manage"
+                : `Choose ${nativeVaultsList[defaultChainId][vaultId].token.symbol}`
+            }
             learnMoreLink={"/"}
             infoSymbol={nativeVaultsList[defaultChainId][vaultId].name}
-            btnAction={() => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])}
+            btnAction={
+              vaultStatusList[vaultId] === 1n
+                ? () => {}
+                : () => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
+            }
           />
         ))}
       </div>
