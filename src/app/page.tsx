@@ -21,7 +21,7 @@ import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
   // const router = useRouter();
-  const [showMintSection, setShowMintSection] = useState(true)
+  const [showMintSection, setShowMintSection] = useState(false)
   const handleShowMintSection = () => {
     setShowMintSection(!showMintSection)
   }
