@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 
+import MintSection from "@/components/MintSection";
 import VaultCard from "@/components/VaultCard";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
@@ -19,7 +20,11 @@ import { getDefaultChainId } from "@/utils/chain";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
-  const router = useRouter();
+  // const router = useRouter();
+  const [showMintSection, setShowMintSection] = useState(true)
+  const handleShowMintSection = () => {
+    setShowMintSection(!showMintSection)
+  }
   const { isConnected, address, chain } = useAccount();
   const dispatch = useAppDispatch();
   const { getTroveStatus } = useTroveManager();
@@ -33,8 +38,10 @@ const VaultsPage = () => {
 
   const setActiveVaultFunc = (vault: VaultType) => {
     dispatch(setActiveVault(vault));
-    router.push("/mint");
+    handleShowMintSection()
   };
+
+
 
   useEffect(() => {
     if (isConnected && address && chain && chain.id) {
@@ -56,45 +63,52 @@ const VaultsPage = () => {
   }, [isConnected, address, chain, nativeVaultsList, appBuildEnvironment]);
 
   return (
-    <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] mx-auto mt-[70px]">
-      <div className="px-5 flex gap-6 items-center">
-        <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
-        <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
-      </div>
+    <>
+      {
+        showMintSection ? <MintSection handleShowMintSection={handleShowMintSection} /> :
 
-      <p className="px-5 text-[14px] text-white font-normal">
-        Info about vaults and available LSTs etc. More coming in the future.
-      </p>
 
-      <hr className="border-[#647594] w-full my-12" />
+          <div className="w-[90%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[50%] mx-auto mt-[70px]">
+            <div className="px-5 flex gap-6 items-center">
+              <Image className="brightness-0 invert" src={vaultsIcon} alt="Vaults Icon" width={24} />
+              <p className="leading-[60px] font-bold text-[30px] text-whtie">Vaults</p>
+            </div>
 
-      <div className="grid gap-12 grid-cols-1 sm:grid-cols-2">
-        {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
-          <VaultCard
-            key={vaultId}
-            iconImg={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
-            symbol={nativeVaultsList[defaultChainId][vaultId].token.symbol}
-            name={nativeVaultsList[defaultChainId][vaultId].token.name}
-            tvl="$328.34k"
-            mintedBlue="299.99k/20.00m"
-            minCollateralRation="130%"
-            apr="5.99% - 8.99%"
-            btnText={
-              vaultStatusList[vaultId] === 1n
-                ? "Manage"
-                : `Choose ${nativeVaultsList[defaultChainId][vaultId].token.symbol}`
-            }
-            learnMoreLink={"/"}
-            infoSymbol={nativeVaultsList[defaultChainId][vaultId].name}
-            btnAction={
-              vaultStatusList[vaultId] === 1n
-                ? () => {}
-                : () => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
-            }
-          />
-        ))}
-      </div>
-    </div>
+            <p className="px-5 text-[14px] text-white font-normal">
+              Info about vaults and available LSTs etc. More coming in the future.
+            </p>
+
+            <hr className="border-[#647594] w-full my-12" />
+
+            <div className="grid gap-12 grid-cols-1 sm:grid-cols-2">
+              {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
+                <VaultCard
+                  key={vaultId}
+                  iconImg={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
+                  symbol={nativeVaultsList[defaultChainId][vaultId].token.symbol}
+                  name={nativeVaultsList[defaultChainId][vaultId].token.name}
+                  tvl="$328.34k"
+                  mintedBlue="299.99k/20.00m"
+                  minCollateralRation="130%"
+                  apr="5.99% - 8.99%"
+                  btnText={
+                    vaultStatusList[vaultId] === 1n
+                      ? "Manage"
+                      : `Choose ${nativeVaultsList[defaultChainId][vaultId].token.symbol}`
+                  }
+                  learnMoreLink={"/"}
+                  infoSymbol={nativeVaultsList[defaultChainId][vaultId].name}
+                  btnAction={
+                    vaultStatusList[vaultId] === 1n
+                      ? () => { }
+                      : () => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
+                  }
+                />
+              ))}
+            </div>
+          </div>
+      }
+    </>
   );
 };
 

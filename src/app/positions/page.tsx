@@ -15,9 +15,7 @@ const Page = () => {
   const router = useRouter()
   const [positionsAvailable, setpositionsAvailable] = useState(false);
   const goToManagePositions = () => {
-    console.log("1111")
-    router.push('/positions/manage-positions')
-    console.log("2222")
+    router.push('/positions/123')
   }
 
   useEffect(() => {
