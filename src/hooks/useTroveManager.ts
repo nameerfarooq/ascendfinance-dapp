@@ -12,6 +12,7 @@ const publicClient = wagmiConfig.getClient();
 export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
   getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint>;
+  getTroveStatus: (troveManagerAddress: Address, walletAddress: Address) => Promise<bigint>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -63,9 +64,34 @@ export const useTroveManager = (): {
     [isConnected, address],
   );
 
+  const getTroveStatus = useCallback(
+    async (troveManagerAddress: Address, walletAddress: Address): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress && walletAddress) {
+          const troveStatus = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "getTroveStatus",
+            args: [walletAddress],
+          });
+
+          return troveStatus as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("getTroveStatus (): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     convertYieldTokensToShares,
     getTroveOwnersCount,
+    getTroveStatus,
   };
 };
 

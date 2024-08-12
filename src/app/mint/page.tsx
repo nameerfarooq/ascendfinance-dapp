@@ -1,11 +1,11 @@
 "use client";
 
-import {  useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 // import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
-import { formatUnits, parseEther, parseUnits, type Address } from "viem";
+import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
@@ -29,7 +29,7 @@ import mintIcon from "../../../public/icons/mintIcon.svg";
 const MintPage = () => {
   const { isConnected, chain, address } = useAccount();
   const dispatch = useAppDispatch();
-  const router = useRouter()
+  const router = useRouter();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount } = useTroveManager();
@@ -82,7 +82,7 @@ const MintPage = () => {
 
   const setMintToMax = () => {
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+    const mintAmount = (parseFloat(depositAmount) * 1500) / collateralRatioProportion;
     setMintAmount(mintAmount.toString());
   };
 
@@ -178,8 +178,8 @@ const MintPage = () => {
       console.log("troveOwnersCount: ", troveOwnersCount);
 
       // Step#4
-      const numTrials = 15 * Math.sqrt(Number(troveOwnersCount));
-      const inputRandomSeed = parseEther("10000000");
+      const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+      const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
       const approxHint = await getApproxHint(
         multiCollateralHintHelpersAddress,
@@ -211,16 +211,6 @@ const MintPage = () => {
         insertPosition[1],
       );
       console.log("tx: ", tx);
-      console.log("1234: ", {
-        borrowerOperationsAddress,
-        troveManagerAddress,
-        address,
-        "0": 0n,
-        "1": parseUnits(depositAmount, activeVault.token.decimals),
-        "2": parseUnits(mintAmount, activeVault.token.decimals),
-        "3": insertPosition[0],
-        "4": insertPosition[1],
-      });
     }
   };
 
@@ -271,7 +261,7 @@ const MintPage = () => {
     let isValid = false;
 
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const maxMintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+    const maxMintAmount = (parseFloat(depositAmount) * 1500) / collateralRatioProportion;
 
     const amount = parseFloat(mintAmount);
     if (amount > 0 && amount <= maxMintAmount) {
@@ -311,8 +301,17 @@ const MintPage = () => {
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[80%] md:w-[70%] lg:w-[55%]  xl:w-[48%]">
-        <div onClick={() => { router.push('/positions') }} className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor">
-          <Image src={goBackIcon} alt='Go back Icon' className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain" />
+        <div
+          onClick={() => {
+            router.push("/positions");
+          }}
+          className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor"
+        >
+          <Image
+            src={goBackIcon}
+            alt="Go back Icon"
+            className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain"
+          />
         </div>
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
@@ -349,8 +348,12 @@ const MintPage = () => {
               <div className="flex gap-6 items-center">
                 <Image src={activeVault?.token?.logoURI || ""} alt="icon" width={55} />
                 <div className="flex flex-col gap-0">
-                  <p className="font-bold text-[24px] leading-[28px]">{activeVault?.token?.symbol || ""}</p>
-                  <p className="font-medium text-[12px] leading-[24px]">{activeVault?.token?.name || ""}</p>
+                  <p className="font-bold text-[24px] leading-[28px]">
+                    {activeVault?.token?.symbol || ""}
+                  </p>
+                  <p className="font-medium text-[12px] leading-[24px]">
+                    {activeVault?.token?.name || ""}
+                  </p>
                 </div>
               </div>
               {/* {showVaults && (
@@ -505,19 +508,15 @@ const MintPage = () => {
 
           <div className="mt-8 flex gap-4">
             <ButtonStyle1
-              disabled={
-                !isAllowanceEnough
-                  ? !isDepositValid || !isConnected
-                  : !isDepositValid || !isMintValid || !isConnected
-              }
-              // text={isAllowanceEnough ? "Mint" : "Approve"}
-              text={isAllowanceEnough ? "Mint" : "Approve weETH"}
+              disabled={!isConnected || isAllowanceEnough || !isDepositValid}
+              text={`Approve ${activeVault.token.symbol}`}
               action={handleCtaFunctions}
             />
+
             <ButtonStyle1
-              disabled={false}
+              disabled={!isConnected || !isAllowanceEnough || !isDepositValid || !isMintValid}
               text={"Deposit"}
-              action={() => { }}
+              action={handleCtaFunctions}
             />
           </div>
         </div>

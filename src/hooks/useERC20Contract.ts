@@ -133,16 +133,17 @@ export const useERC20Contract = (): {
             args: [spenderAddress, amount],
           });
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash })
-          return tx
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          return tx;
         }
       } catch (error: any) {
-        // console.log("approve(): ", error);
-        const keys = Object.keys(error);
+        console.log("approve(): ", error);
+        
+        // const keys = Object.keys(error);
 
-        for (const key of keys) {
-          console.log(key, ": ", error[key]);
-        }
+        // for (const key of keys) {
+        //   console.log(key, ": ", error[key]);
+        // }
       }
     },
     [isConnected, address],
