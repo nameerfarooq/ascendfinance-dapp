@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import Image from "next/image";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -20,7 +20,7 @@ import { getDefaultChainId } from "@/utils/chain";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
-  // const router = useRouter();
+  const router = useRouter();
   const [showMintSection, setShowMintSection] = useState(false)
   const handleShowMintSection = () => {
     setShowMintSection(!showMintSection)
@@ -100,8 +100,8 @@ const VaultsPage = () => {
                   infoSymbol={nativeVaultsList[defaultChainId][vaultId].name}
                   btnAction={
                     vaultStatusList[vaultId] === 1n
-                      ? () => { }
-                      : () => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
+                      ? () => { router.push(`/positions/${vaultId}`) }
+                    : () => setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
                   }
                 />
               ))}
