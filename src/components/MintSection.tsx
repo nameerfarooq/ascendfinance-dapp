@@ -305,7 +305,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-10px sm:w-[80%] md:w-[70%] lg:w-[55%]  xl:w-[48%]">
                 <div
                     onClick={handleShowMintSection}
-                    className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor"
+                    className="w-max mx-4 my-2 absolute  lg:-left-[115px] shadow-2xl -left-10 -top-12 lg:top-0 rounded-full p-6 lg:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor"
                 >
                     <Image
                         src={goBackIcon}
@@ -313,7 +313,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                         className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain"
                     />
                 </div>
-                <div className="pt-6 pb-10 px-12">
+                <div className="pt-6 pb-10 px-6 sm:px-12">
                     <div className="flex items-center gap-6">
                         <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />
                         <p className="font-bold leading-[60px] text-[30px] text-white">Mint BLUE</p>
@@ -457,7 +457,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                     <div className="rounded-2xl border-2 mt-6 border-primaryColor py-8 px-4 sm:px-8 flex flex-col gap-6 font-medium text-[12px] leading-[24px]">
                         <div>
                             <p>Debt</p>
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center gap-2">
                                 <div className="rounded-2xl bg-secondaryColor flex items-center w-[160px]">
                                     <div
                                         onClick={() => debtRatioStateChanger(true)}

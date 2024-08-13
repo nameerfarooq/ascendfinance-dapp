@@ -23,12 +23,12 @@ const Page = () => {
     return (
         <div className='flex items-center justify-center min-h-full w-full'>
             <div className="relative bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:w-[70%] xl:w-[45%]  2xl:w-[35%]">
-                <div onClick={() => { router.push('/positions') }} className="static w-max mx-5 my-2 lg:absolute -left-[115px] shadow-xl top-0 rounded-full p-5 sm:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor">
+                <div onClick={router.back} className="w-max mx-4 my-2 absolute  lg:-left-[115px] shadow-2xl -left-10 -top-12 lg:top-0 rounded-full p-6 lg:p-10 bg-secondaryColor lg:bg-baseColor cursor-pointer hover:bg-primaryColor">
 
 
                     <Image src={goBackIcon} alt='Go back Icon' className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain" />
                 </div>
-                <div className="pt-6 pb-16 px-4 sm:px-12">
+                <div className="pt-10 sm:pt-6 pb-16 px-4 sm:px-12">
                     <div className="flex items-center gap-3">
                         <Image
                             alt="Positions icon"
