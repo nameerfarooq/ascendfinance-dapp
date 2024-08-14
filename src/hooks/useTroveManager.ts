@@ -13,6 +13,10 @@ export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
   getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint>;
   getTroveStatus: (troveManagerAddress: Address, walletAddress: Address) => Promise<bigint>;
+  getTroveCollSharesAndDebt: (
+    troveManagerAddress: Address,
+    walletAddress: Address,
+  ) => Promise<bigint[]>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -88,10 +92,35 @@ export const useTroveManager = (): {
     [isConnected, address],
   );
 
+  const getTroveCollSharesAndDebt = useCallback(
+    async (troveManagerAddress: Address, walletAddress: Address): Promise<bigint[]> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress && walletAddress) {
+          const troveCollSharesAndDebt = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "getTroveCollSharesAndDebt",
+            args: [walletAddress],
+          });
+
+          return troveCollSharesAndDebt as bigint[];
+        } else {
+          return [0n, 0n];
+        }
+      } catch (error) {
+        console.log("getTroveStatus (): ", error);
+        return [0n, 0n];
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     convertYieldTokensToShares,
     getTroveOwnersCount,
     getTroveStatus,
+    getTroveCollSharesAndDebt,
   };
 };
 
