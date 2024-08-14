@@ -10,7 +10,7 @@ const vaultsList: VaultsListType = {
         token: {
           address: "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
           chainId: 11155111,
-          name: "Wrapped eETH",
+          name: "EtherFi Restaked Ether",
           symbol: "weETH",
           decimals: 18,
           logoURI: weETH_Logo,
@@ -25,7 +25,7 @@ const vaultsList: VaultsListType = {
         token: {
           address: "0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee",
           chainId: 1,
-          name: "Wrapped eETH",
+          name: "EtherFi Restaked Ether",
           symbol: "weETH",
           decimals: 18,
           logoURI: weETH_Logo,
