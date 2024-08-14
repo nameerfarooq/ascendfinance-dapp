@@ -48,16 +48,13 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0",
   );
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
-  // const [tokenAllowance, setTokenAllowance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  // const nativeVaultsList = vaultsList[appBuildEnvironment];
-  // const defaultChainId = getDefaultChainId(chain);
-  const debouncedDepositAmount = useDebounce(depositAmount, 500);
-  const debouncedMintAmount = useDebounce(mintAmount, 500);
+  const debouncedDepositAmount = useDebounce(depositAmount, 350);
+  const debouncedMintAmount = useDebounce(mintAmount, 350);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -73,10 +70,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     );
   };
 
-  // const setActiveVaultFunc = (vault: VaultType) => {
-  //   dispatch(setActiveVault(vault));
-  // };
-
   const setDepositToMax = () => {
     const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
     setDepositAmount(maxDepositAmount);
@@ -84,7 +77,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const setMintToMax = () => {
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount = (parseFloat(depositAmount) * 1500) / collateralRatioProportion;
+    const mintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
     setMintAmount(mintAmount.toString());
   };
 
@@ -123,9 +116,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     if (address && depositAmount) {
       allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
-        // console.log("allowance: ", result);
-        // setTokenAllowance(result);
-
         if (result >= parseUnits(depositAmount, activeVault.token.decimals)) {
           setIsAllowanceEnough(true);
         } else {
@@ -263,7 +253,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     let isValid = false;
 
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const maxMintAmount = (parseFloat(depositAmount) * 1500) / collateralRatioProportion;
+    const maxMintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
 
     const amount = parseFloat(mintAmount);
     if (amount > 0 && amount <= maxMintAmount) {

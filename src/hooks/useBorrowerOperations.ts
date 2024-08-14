@@ -20,6 +20,14 @@ export const useBorrowerOperations = (): {
     upperHint: Address,
     lowerHint: Address,
   ) => Promise<TransactionReceipt | void>;
+  addColl: (
+    borrowerOperationsAddress: Address,
+    troveManagerAddress: Address,
+    walletAddress: Address,
+    collateralAmount: bigint,
+    upperHint: Address,
+    lowerHint: Address,
+  ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -82,8 +90,56 @@ export const useBorrowerOperations = (): {
     [isConnected, address],
   );
 
+  const addColl = useCallback(
+    async (
+      borrowerOperationsAddress: Address,
+      troveManagerAddress: Address,
+      walletAddress: Address,
+      collateralAmount: bigint,
+      upperHint: Address,
+      lowerHint: Address,
+    ): Promise<TransactionReceipt | void> => {
+      try {
+        if (
+          isConnected &&
+          address &&
+          publicClient &&
+          borrowerOperationsAddress &&
+          troveManagerAddress &&
+          walletAddress &&
+          collateralAmount &&
+          upperHint &&
+          lowerHint
+        ) {
+          const walletClient = createWalletClient({
+            chain: publicClient.chain,
+            transport: custom(window.ethereum!),
+          });
+
+          const hash = await writeContract(walletClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "addColl",
+            args: [troveManagerAddress, walletAddress, collateralAmount, upperHint, lowerHint],
+          });
+
+          console.log("hash: ", hash);
+
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+          return tx;
+        }
+      } catch (error) {
+        console.log("addColl(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     openTrove,
+    addColl,
   };
 };
 
