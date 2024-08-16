@@ -17,6 +17,9 @@ export const useTroveManager = (): {
     troveManagerAddress: Address,
     walletAddress: Address,
   ) => Promise<bigint[]>;
+  convertSharesToYieldTokens: (troveManagerAddress: Address, shares: bigint) => Promise<bigint>;
+  fetchPriceInUsd: (troveManagerAddress: Address) => Promise<bigint>;
+  MCR: (troveManagerAddress: Address) => Promise<bigint>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -37,7 +40,7 @@ export const useTroveManager = (): {
           return 0n;
         }
       } catch (error) {
-        console.log("convertYieldTokensToShares (): ", error);
+        console.log("convertYieldTokensToShares(): ", error);
         return 0n;
       }
     },
@@ -61,7 +64,7 @@ export const useTroveManager = (): {
           return 0n;
         }
       } catch (error) {
-        console.log("getTroveOwnersCount (): ", error);
+        console.log("getTroveOwnersCount(): ", error);
         return 0n;
       }
     },
@@ -85,7 +88,7 @@ export const useTroveManager = (): {
           return 0n;
         }
       } catch (error) {
-        console.log("getTroveStatus (): ", error);
+        console.log("getTroveStatus(): ", error);
         return 0n;
       }
     },
@@ -109,8 +112,80 @@ export const useTroveManager = (): {
           return [0n, 0n];
         }
       } catch (error) {
-        console.log("getTroveStatus (): ", error);
+        console.log("getTroveStatus(): ", error);
         return [0n, 0n];
+      }
+    },
+    [isConnected, address],
+  );
+
+  const convertSharesToYieldTokens = useCallback(
+    async (troveManagerAddress: Address, shares: bigint): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress && shares) {
+          const { result } = await simulateContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "convertSharesToYieldTokens",
+            args: [shares],
+          });
+
+          return result as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("convertSharesToYieldTokens(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const fetchPriceInUsd = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const { result } = await simulateContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "fetchPriceInUsd",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("fetchPriceInUsd(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const MCR = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const { result } = await simulateContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "MCR",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("MCR(): ", error);
+        return 0n;
       }
     },
     [isConnected, address],
@@ -121,6 +196,9 @@ export const useTroveManager = (): {
     getTroveOwnersCount,
     getTroveStatus,
     getTroveCollSharesAndDebt,
+    convertSharesToYieldTokens,
+    fetchPriceInUsd,
+    MCR,
   };
 };
 

@@ -34,7 +34,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   // const router = useRouter();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
   const { balanceOf, allowance, approve } = useERC20Contract();
-  const { convertYieldTokensToShares, getTroveOwnersCount } = useTroveManager();
+  const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
@@ -51,6 +51,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
+  const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
@@ -77,7 +78,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const setMintToMax = () => {
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+    const mintAmount =
+      (parseFloat(depositAmount) * parseFloat(formatUnits(tokenPrice_USD, 18))) /
+      collateralRatioProportion;
+
     setMintAmount(mintAmount.toString());
   };
 
@@ -256,7 +260,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     let isValid = false;
 
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const maxMintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
+    const maxMintAmount =
+      (parseFloat(depositAmount) * parseFloat(formatUnits(tokenPrice_USD, 18))) /
+      collateralRatioProportion;
 
     const amount = parseFloat(mintAmount);
     if (amount > 0 && amount <= maxMintAmount) {
@@ -287,8 +293,15 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   }, [debouncedMintAmount]);
 
   useEffect(() => {
-    if (address) {
+    if (address && chain && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+
       fetchTokenbalance(activeVault.token.address, address);
+      fetchPriceInUsd(troveManagerAddress).then((priceInUSD) => {
+        setTokenPrice_USD(priceInUSD);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, chain, activeVault.token]);
