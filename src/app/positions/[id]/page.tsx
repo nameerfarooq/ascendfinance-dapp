@@ -125,7 +125,7 @@ const Page = ({ params }: { params: { id: string } }) => {
           </div>
 
           {tab === 0 && <DepositPosition activeVault={activeVault} />}
-          {tab === 1 && <MintPosition />}
+          {tab === 1 && <MintPosition activeVault={activeVault} />}
           {tab === 2 && <WithdrawPosition />}
           {tab === 3 && <RepayPosition />}
         </div>

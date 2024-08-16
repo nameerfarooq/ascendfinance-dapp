@@ -31,11 +31,9 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
 
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("0");
-  const [mintAmount, setMintAmount] = useState<string>("0");
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
-  // const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
@@ -89,13 +87,6 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     }
   };
 
-  const setMintToMax = () => {
-    const collateralRatio = process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0"
-    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount = (parseFloat(depositAmount) * 2000) / collateralRatioProportion;
-    setMintAmount(mintAmount.toString());
-  };
-
   const getTokenDeposited = async (
     troveManagerAddress: Address,
     multiCollateralHintHelpersAddress: Address,
@@ -111,19 +102,16 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
       // Step#2
       const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
       console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
-      
+
       // Step#3
-      setMintToMax()
       const totalShares = sharesAmount + troveCollSharesAndDebt[0];
       console.log("totalShares: ", totalShares);
-      const totalDebt = BigInt(mintAmount) + troveCollSharesAndDebt[1];
-      console.log("totalDebt: ", totalDebt);
 
       // Step # 4
       const NCIR = await computeNominalCR(
         multiCollateralHintHelpersAddress,
         totalShares,
-        totalDebt,
+        troveCollSharesAndDebt[1],
       );
       console.log("NCIR: ", NCIR);
 
@@ -163,6 +151,9 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
         insertPosition[1],
       );
       console.log("tx: ", tx);
+
+      // Step#9
+      fetchTokenbalance(activeVault.token.address, address);
     }
   };
 
@@ -209,8 +200,6 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     ) {
       isValid = true;
     }
-
-    console.log("isValid: ", isValid);
 
     setIsDepositValid(isValid);
   };
@@ -314,7 +303,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
 
       <div>
         <ButtonStyle1
-          disabled={!isAllowanceEnough ? !isConnected || !isDepositValid : false}
+          disabled={!isConnected || !isDepositValid}
           text={`${!isAllowanceEnough ? "Approve" : "Deposit"} ${activeVault?.token.symbol}`}
           action={handleCtaFunctions}
         />
