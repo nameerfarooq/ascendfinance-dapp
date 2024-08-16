@@ -196,8 +196,7 @@ export const useBorrowerOperations = (): {
           console.log("tx: ", tx);
           return tx;
         }
-      } catch (error: unknown) {
-        console.log(error?.shortMessage);
+      } catch (error) {
         console.log("withdrawDebt(): ", error);
       }
     },
