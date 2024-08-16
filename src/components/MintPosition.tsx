@@ -9,7 +9,6 @@ import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
-import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
@@ -21,68 +20,32 @@ interface MintPositionProps {
 
 const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const { isConnected, chain, address } = useAccount();
-  const { balanceOf, allowance } = useERC20Contract();
-  const { getTroveOwnersCount, getTroveCollSharesAndDebt } = useTroveManager();
+  const {
+    getTroveOwnersCount,
+    getTroveCollSharesAndDebt,
+    convertSharesToYieldTokens,
+    fetchPriceInUsd,
+    MCR,
+  } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { withdrawDebt } = useBorrowerOperations();
 
   const [mintAmount, setMintAmount] = useState<string>("0");
-  const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
-  const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
+  const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
 
-  console.log(isAllowanceEnough);
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedMintAmount = useDebounce(mintAmount, 350);
-
-  const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
-    if (address) {
-      balanceOf(tokenAddress, walletAddress).then((balance) => {
-        setTokenBalance(balance);
-      });
-    }
-  };
-
-  const fetchTokenAllowance = (
-    tokenAddress: Address,
-    ownerAddress: Address,
-    spenderAddress: Address,
-  ) => {
-    if (address && mintAmount && activeVault) {
-      allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
-        if (result >= parseUnits(mintAmount, activeVault.token.decimals)) {
-          setIsAllowanceEnough(true);
-        } else {
-          setIsAllowanceEnough(false);
-        }
-      });
-    }
-  };
 
   const handleMintInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setMintAmount(value);
   };
 
-  // const getTokenApproved = async (
-  //   tokenAddress: Address,
-  //   spenderAddress: Address,
-  //   amount: bigint,
-  // ) => {
-  //   if (address && mintAmount) {
-  //     await approve(tokenAddress, spenderAddress, amount).then((tx) => {
-  //       console.log("Approved: ", tx);
-  //       fetchTokenAllowance(tokenAddress, address, spenderAddress);
-  //     });
-  //   }
-  // };
-
   const setMintToMax = () => {
-    if (activeVault) {
-      const maxMintAmount = formatUnits(tokenBalance, activeVault.token.decimals);
-      setMintAmount(maxMintAmount);
-    }
+    const maxMintAmount = formatUnits(maxMintableAmount, 18);
+    setMintAmount(maxMintAmount);
   };
 
   const getTokenMinted = async (
@@ -176,32 +139,57 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const validateMint = () => {
     let isValid = false;
     const amount = parseFloat(mintAmount);
-    if (
-      activeVault &&
-      amount > 0 &&
-      amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))
-    ) {
+    if (activeVault && amount > 0 && amount <= parseFloat(formatUnits(maxMintableAmount, 18))) {
       isValid = true;
     }
 
     setIsMintValid(isValid);
   };
 
+  const calcMaxMintableAmount = async () => {
+    if (isConnected && address && chain && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+
+      // 1) Fetch Collateral Shares & Debt
+      const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+      console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+
+      // 2) Convert Shares to Yield token
+      const yieldTokens = await convertSharesToYieldTokens(
+        troveManagerAddress,
+        troveCollSharesAndDebt[0],
+      );
+      console.log("yieldTokens: ", yieldTokens);
+
+      // 3) Fetch USD Price
+      const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+      console.log("priceInUSD: ", priceInUSD);
+
+      // 4) Fetch Minimum Collateral Ratio (MCR)
+      const minCollateralRatio = await MCR(troveManagerAddress);
+      console.log("minCollateralRatio: ", minCollateralRatio);
+
+      // 5) Calculate Max & Additional Debt
+      const maxDebtAllowed = (priceInUSD * yieldTokens) / minCollateralRatio;
+      const additionalDebtAllowed = maxDebtAllowed - troveCollSharesAndDebt[1];
+      console.log("maxDebtAllowed: ", maxDebtAllowed);
+      console.log("additionalDebtAllowed: ", additionalDebtAllowed);
+      setMaxMintableAmount(additionalDebtAllowed);
+    }
+  };
+
   useEffect(() => {
     validateMint();
-
-    if (address && chain && activeVault) {
-      const borrowerOperationsAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
-      fetchTokenAllowance(activeVault.token.address, address, borrowerOperationsAddress);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount]);
 
   useEffect(() => {
     if (address && activeVault) {
-      fetchTokenbalance(activeVault.token.address, address);
+      calcMaxMintableAmount();
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, chain, activeVault?.token]);
 
