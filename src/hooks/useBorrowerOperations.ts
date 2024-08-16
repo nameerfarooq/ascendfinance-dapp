@@ -28,6 +28,16 @@ export const useBorrowerOperations = (): {
     upperHint: Address,
     lowerHint: Address,
   ) => Promise<TransactionReceipt | void>;
+
+  withdrawDebt: (
+    borrowerOperationsAddress: Address,
+    troveManagerAddress: Address,
+    walletAddress: Address,
+    maxFeePercentage: bigint,
+    debtAmount: bigint,
+    upperHint: Address,
+    lowerHint: Address,
+  ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -137,9 +147,67 @@ export const useBorrowerOperations = (): {
     [isConnected, address],
   );
 
+  const withdrawDebt = useCallback(
+    async (
+      borrowerOperationsAddress: Address,
+      troveManagerAddress: Address,
+      walletAddress: Address,
+      maxFeePercentage: bigint,
+      debtAmount: bigint,
+      upperHint: Address,
+      lowerHint: Address,
+    ): Promise<TransactionReceipt | void> => {
+      try {
+        if (
+          isConnected &&
+          address &&
+          publicClient &&
+          borrowerOperationsAddress &&
+          troveManagerAddress &&
+          walletAddress &&
+          // maxFeePercentage &&
+          debtAmount &&
+          upperHint &&
+          lowerHint
+        ) {
+          const walletClient = createWalletClient({
+            chain: publicClient.chain,
+            transport: custom(window.ethereum!),
+          });
+
+          const hash = await writeContract(walletClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "withdrawDebt",
+            args: [
+              troveManagerAddress,
+              walletAddress,
+              maxFeePercentage,
+              debtAmount,
+              upperHint,
+              lowerHint,
+            ],
+          });
+
+          console.log("hash: ", hash);
+
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+          return tx;
+        }
+      } catch (error: unknown) {
+        console.log(error?.shortMessage);
+        console.log("withdrawDebt(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     openTrove,
     addColl,
+    withdrawDebt,
   };
 };
 

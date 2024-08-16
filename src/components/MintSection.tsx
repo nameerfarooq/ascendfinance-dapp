@@ -161,7 +161,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       const NCIR = await computeNominalCR(
         multiCollateralHintHelpersAddress,
         sharesAmount,
-        parseUnits(mintAmount, activeVault.token.decimals),
+        parseUnits(mintAmount, 18),
       );
       console.log("NCIR: ", NCIR);
 
@@ -198,11 +198,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         address,
         0n,
         parseUnits(depositAmount, activeVault.token.decimals),
-        parseUnits(mintAmount, activeVault.token.decimals),
+        parseUnits(mintAmount, 18),
         insertPosition[0],
         insertPosition[1],
       );
       console.log("tx: ", tx);
+
+      // Step#7
+      fetchTokenbalance(activeVault.token.address, address);
     }
   };
 
