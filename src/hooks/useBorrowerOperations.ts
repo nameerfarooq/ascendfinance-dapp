@@ -36,6 +36,14 @@ export const useBorrowerOperations = (): {
     upperHint: Address,
     lowerHint: Address,
   ) => Promise<TransactionReceipt | void>;
+  repayDebt: (
+    borrowerOperationsAddress: Address,
+    troveManagerAddress: Address,
+    walletAddress: Address,
+    debtAmount: bigint,
+    upperHint: Address,
+    lowerHint: Address,
+  ) => Promise<TransactionReceipt | void>;
 
   withdrawDebt: (
     borrowerOperationsAddress: Address,
@@ -200,6 +208,52 @@ export const useBorrowerOperations = (): {
     },
     [isConnected, address],
   );
+  const repayDebt = useCallback(
+    async (
+      borrowerOperationsAddress: Address,
+      troveManagerAddress: Address,
+      walletAddress: Address,
+      debtAmount: bigint,
+      upperHint: Address,
+      lowerHint: Address,
+    ): Promise<TransactionReceipt | void> => {
+      try {
+        if (
+          isConnected &&
+          address &&
+          publicClient &&
+          borrowerOperationsAddress &&
+          troveManagerAddress &&
+          walletAddress &&
+          debtAmount &&
+          upperHint &&
+          lowerHint
+        ) {
+          const walletClient = createWalletClient({
+            chain: publicClient.chain,
+            transport: custom(window.ethereum!),
+          });
+
+          const hash = await writeContract(walletClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "repayDebt",
+            args: [troveManagerAddress, walletAddress, debtAmount, upperHint, lowerHint],
+          });
+
+          console.log("hash: ", hash);
+
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+          return tx;
+        }
+      } catch (error) {
+        console.log("repayDebt(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
 
   const withdrawDebt = useCallback(
     async (
@@ -263,6 +317,7 @@ export const useBorrowerOperations = (): {
     addColl,
     withdrawColl,
     withdrawDebt,
+    repayDebt
   };
 };
 
