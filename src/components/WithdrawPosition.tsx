@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, type ChangeEvent } from "react";
+import React, { useState, type ChangeEvent } from "react";
 
 import { parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
@@ -21,7 +21,7 @@ interface WithdrawPositionProps {
 const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     const { isConnected, chain, address } = useAccount();
     // const { balanceOf } = useERC20Contract();
-    const { convertYieldTokensToShares, convertSharesToYieldTokens, getTroveOwnersCount, getTroveCollSharesAndDebt } =
+    const { convertYieldTokensToShares, getTroveOwnersCount, getTroveCollSharesAndDebt } =
         useTroveManager();
     const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
     const { findInsertPosition } = useSortedTroves();
