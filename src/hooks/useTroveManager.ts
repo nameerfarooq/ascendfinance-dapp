@@ -11,6 +11,7 @@ const publicClient = wagmiConfig.getClient();
 
 export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
+  convertSharesToYieldTokens: (troveManagerAddress: Address, shares: bigint) => Promise<bigint>;
   getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint>;
   getTroveStatus: (troveManagerAddress: Address, walletAddress: Address) => Promise<bigint>;
   getTroveCollSharesAndDebt: (
@@ -41,6 +42,30 @@ export const useTroveManager = (): {
         }
       } catch (error) {
         console.log("convertYieldTokensToShares(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address],
+  );
+  const convertSharesToYieldTokens = useCallback(
+    async (troveManagerAddress: Address, shares: bigint): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress && shares) {
+          console.log("result coming soon:")
+          const { result } = await simulateContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "convertSharesToYieldTokens",
+            args: [shares],
+          });
+          console.log("result :", result)
+          return result as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("convertSharesToYieldTokens (): ", error);
         return 0n;
       }
     },
@@ -193,6 +218,7 @@ export const useTroveManager = (): {
 
   return {
     convertYieldTokensToShares,
+    convertSharesToYieldTokens,
     getTroveOwnersCount,
     getTroveStatus,
     getTroveCollSharesAndDebt,
