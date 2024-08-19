@@ -20,6 +20,11 @@ export const useBorrowerOperations = (): {
     upperHint: Address,
     lowerHint: Address,
   ) => Promise<TransactionReceipt | void>;
+  closeTrove: (
+    borrowerOperationsAddress: Address,
+    troveManagerAddress: Address,
+    walletAddress: Address,
+  ) => Promise<TransactionReceipt | void>;
   addColl: (
     borrowerOperationsAddress: Address,
     troveManagerAddress: Address,
@@ -111,6 +116,51 @@ export const useBorrowerOperations = (): {
         }
       } catch (error) {
         console.log("openTrove(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
+  const closeTrove = useCallback(
+    async (
+      borrowerOperationsAddress: Address,
+      troveManagerAddress: Address,
+      walletAddress: Address,
+
+    ): Promise<TransactionReceipt | void> => {
+      try {
+        if (
+          isConnected &&
+          address &&
+          publicClient &&
+          borrowerOperationsAddress &&
+          troveManagerAddress &&
+          walletAddress
+
+        ) {
+          const walletClient = createWalletClient({
+            chain: publicClient.chain,
+            transport: custom(window.ethereum!),
+          });
+
+          const hash = await writeContract(walletClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "closeTrove",
+            args: [
+              troveManagerAddress,
+              walletAddress,
+            ],
+          });
+
+          console.log("hash: ", hash);
+
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+          return tx;
+        }
+      } catch (error) {
+        console.log("closeTrove(): ", error);
       }
     },
     [isConnected, address],
@@ -313,6 +363,7 @@ export const useBorrowerOperations = (): {
 
   return {
     openTrove,
+    closeTrove,
     addColl,
     withdrawColl,
     withdrawDebt,

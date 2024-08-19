@@ -1,10 +1,11 @@
 "use client";
-import React, { useState, type ChangeEvent } from "react";
+import React, { useEffect, useState, type ChangeEvent } from "react";
 
-import { parseUnits, type Address } from "viem";
+import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
+import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 // import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
@@ -19,14 +20,18 @@ interface WithdrawPositionProps {
     activeVault: VaultType | undefined;
 }
 const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
-    const { isConnected, chain, address } = useAccount();
+    const { chain, address } = useAccount();
     // const { balanceOf } = useERC20Contract();
-    const { convertYieldTokensToShares, getTroveOwnersCount, getTroveCollSharesAndDebt } =
+    const { convertYieldTokensToShares, convertSharesToYieldTokens, getTroveOwnersCount, getTroveCollSharesAndDebt } =
         useTroveManager();
     const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
     const { findInsertPosition } = useSortedTroves();
     const { withdrawColl } = useBorrowerOperations();
-
+    const [withdrawAmount, setwithdrawAmount] = useState("");
+    const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
+    const [isValidated, setIsValidated] = useState(true)
+    const [error, setError] = useState("")
+    const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n)
 
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 
@@ -35,11 +40,13 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         setwithdrawAmount(value);
     };
 
-    const [withdrawAmount, setwithdrawAmount] = useState("");
+    const setInputValueMax = async () => {
+        if (activeVault) {
+            setwithdrawAmount(formatUnits(alreadyDepositedTokens, activeVault.token.decimals))
+        }
+    }
 
-    const setInputValueMax = () => {
-        setwithdrawAmount("0");
-    };
+
 
 
     const getTokenWithdrawed = async (
@@ -101,7 +108,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
                 borrowerOperationsAddress,
                 troveManagerAddress,
                 address,
-                parseUnits(withdrawAmount, activeVault.token.decimals),
+                amount,
                 insertPosition[0],
                 insertPosition[1],
             );
@@ -129,33 +136,57 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
                 multiCollateralHintHelpersAddress,
                 sortedTrovesAddress,
                 borrowerOperationsAddress,
-                parseUnits(withdrawAmount, activeVault.token.decimals),
+                parseUnits(debouncedwithdrawAmount, activeVault.token.decimals),
             );
             //   } 
         } else {
             console.log("wallet not connected.");
         }
     };
-    // useEffect(() => {
-    //     const getValidate = async () => {
-    //         if (address && chain && activeVault) {
-    //             const troveManagerAddress: Address =
-    //             CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-    //             .TROVE_MANAGER;
-    //             const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
-    //             console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
-    //             const depositedTokens = await convertSharesToYieldTokens(troveManagerAddress, troveCollSharesAndDebt[0])
-    //             console.log("depositedTokens: ", depositedTokens);
-    //         }
-    //     }
-    //     getValidate()
+    useEffect(() => {
+        const getValidate = async () => {
+            if (address && chain && activeVault) {
+               
+                console.log("debouncedwithdrawAmount: ", debouncedwithdrawAmount);
+                const withDrawAmount = parseUnits(debouncedwithdrawAmount, activeVault.token.decimals);
+                if (withDrawAmount < 0n) {
+                    setIsValidated(false)
+                    setError("Your desired withdraw amount is should be greater than 0")
 
-    // }, [address,activeVault,chain])
+
+                }
+                else if (withDrawAmount > alreadyDepositedTokens) {
+                    setIsValidated(false)
+                    setError("Your desired withdraw amount is greater than deposited token")
+                } else {
+                    setIsValidated(true)
+                    setError("")
+                }
+            }
+        }
+        getValidate()
+
+    }, [debouncedwithdrawAmount, address, activeVault])
+    useEffect(() => {
+        const getAlreadyDepositedTokens = async () => {
+
+            if (address && chain && activeVault) {
+                const troveManagerAddress: Address =
+                    CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+                        .TROVE_MANAGER;
+                const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+                console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+                const depositedTokens = await convertSharesToYieldTokens(troveManagerAddress, troveCollSharesAndDebt[0])
+                setAlreadyDepositedTokens(depositedTokens)
+            }
+        }
+        getAlreadyDepositedTokens()
+    }, [address, chain, activeVault])
     return (
-        <div className="flex flex-col gap-12 pt-12">
+        <div className="flex flex-col gap-8 pt-12">
             <div className="flex flex-col gap-2">
                 <p className="font-medium text-[12px] leading-[24px]">Withdraw weETH</p>
-                <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
+                <div className={`${!isValidated && 'border-[#FF5710]'} border-transparent border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
                     <input
                         value={withdrawAmount}
                         onChange={handleWithdrawInputChange}
@@ -168,6 +199,10 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
                             Max
                         </button>
                     </div>
+                </div>
+                <div className="h-[20px] flex items-center">
+
+                    {error && <p className="text-[#FF5710]">{error}</p>}
                 </div>
             </div>
 
@@ -185,12 +220,12 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
             </div>
             <div>
                 <ButtonStyle1
-                    disabled={!isConnected}
+                    disabled={!isValidated}
                     action={handleCtaFunctions}
                     text="Withdraw"
                 />
             </div>
-        </div>
+        </div >
     );
 };
 
