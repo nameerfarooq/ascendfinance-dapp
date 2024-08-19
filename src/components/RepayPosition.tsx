@@ -1,15 +1,13 @@
 'use client'
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 
-import { formatUnits, parseUnits, type Address } from "viem";
+import { parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
-import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
-import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
@@ -20,46 +18,20 @@ interface RepayPositionProps {
 }
 const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
 
-    const { isConnected, chain, address } = useAccount();
-    const { balanceOf, allowance, approve } = useERC20Contract();
-    const {  getTroveOwnersCount, getTroveCollSharesAndDebt } =
+    const { chain, address } = useAccount();
+    const { getTroveOwnersCount, getTroveCollSharesAndDebt } =
         useTroveManager();
     const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
     const { findInsertPosition } = useSortedTroves();
     const { repayDebt } = useBorrowerOperations();
 
     const [repayAmount, setRepayAmount] = useState<string>("0");
-    const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
-    const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
-    const [isRepayValid, setIsRepayValid] = useState<boolean>(false);
 
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-    const debouncedRepayAmount = useDebounce(repayAmount, 350);
 
 
 
-    const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
-        if (address) {
-            balanceOf(tokenAddress, walletAddress).then((balance) => {
-                setTokenBalance(balance);
-            });
-        }
-    };
-    const fetchTokenAllowance = (
-        tokenAddress: Address,
-        ownerAddress: Address,
-        spenderAddress: Address,
-    ) => {
-        if (address && repayAmount && activeVault) {
-            allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
-                if (result >= parseUnits(repayAmount, activeVault.token.decimals)) {
-                    setIsAllowanceEnough(true);
-                } else {
-                    setIsAllowanceEnough(false);
-                }
-            });
-        }
-    };
+
 
 
     const handleRepayInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -69,18 +41,6 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const setRepayToMax = () => {
         if (activeVault) {
             setRepayAmount("0");
-        }
-    };
-    const getTokenApproved = async (
-        tokenAddress: Address,
-        spenderAddress: Address,
-        amount: bigint,
-    ) => {
-        if (address && repayAmount) {
-            await approve(tokenAddress, spenderAddress, amount).then((tx) => {
-                console.log("Approved: ", tx);
-                fetchTokenAllowance(tokenAddress, address, spenderAddress);
-            });
         }
     };
 
@@ -99,8 +59,9 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
             // Step#2
-            const userDebt = troveCollSharesAndDebt[1] - 0n
-
+            console.log("Repay Amount", parseUnits(repayAmount, activeVault.token.decimals))
+            const userDebt = troveCollSharesAndDebt[1] - parseUnits(repayAmount, activeVault.token.decimals)
+            console.log("userDebt", userDebt)
 
 
             // Step # 3
@@ -115,7 +76,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
             console.log("troveOwnersCount: ", troveOwnersCount);
 
-            // Step#6
+            // Step#5
             const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
             const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
@@ -128,7 +89,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             );
             console.log("approxHint: ", approxHint);
 
-            // Step#7
+            // Step#6
             const insertPosition = await findInsertPosition(
                 sortedTrovesAddress,
                 NCIR,
@@ -137,7 +98,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             );
             console.log("insertPosition: ", insertPosition);
 
-            // Step#8
+            // Step#7
             const tx = await repayDebt(
                 borrowerOperationsAddress,
                 troveManagerAddress,
@@ -148,8 +109,6 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             );
             console.log("tx: ", tx);
 
-            // Step#9
-            fetchTokenbalance(activeVault.token.address, address);
         }
     };
 
@@ -166,56 +125,22 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                 CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
                     .SORTED_TROVES;
 
-            if (isAllowanceEnough) {
-                getTokenRepayed(
-                    troveManagerAddress,
-                    multiCollateralHintHelpersAddress,
-                    sortedTrovesAddress,
-                    borrowerOperationsAddress,
-                    parseUnits(repayAmount, activeVault.token.decimals),
-                );
-            } else {
-                getTokenApproved(
-                    activeVault.token.address,
-                    borrowerOperationsAddress,
-                    parseUnits(repayAmount, activeVault.token.decimals),
-                );
-            }
+            getTokenRepayed(
+                troveManagerAddress,
+                multiCollateralHintHelpersAddress,
+                sortedTrovesAddress,
+                borrowerOperationsAddress,
+                parseUnits(repayAmount, activeVault.token.decimals),
+            );
         } else {
             console.log("wallet not connected.");
         }
     };
-    const validateRepay = () => {
-        let isValid = false;
-        const amount = parseFloat(repayAmount);
-        if (
-            activeVault &&
-            amount > 0 &&
-            amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))
-        ) {
-            isValid = true;
-        }
 
-        setIsRepayValid(isValid);
-    };
 
-    useEffect(() => {
-        validateRepay();
 
-        if (address && chain && activeVault) {
-            const borrowerOperationsAddress: Address =
-                CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
-            fetchTokenAllowance(activeVault.token.address, address, borrowerOperationsAddress);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedRepayAmount]);
 
-    useEffect(() => {
-        if (address && activeVault) {
-            fetchTokenbalance(activeVault.token.address, address);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isConnected, address, chain, activeVault?.token]);
+
 
     return (
         <div className="flex flex-col gap-12 pt-12">
@@ -234,9 +159,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                     </div>
                 </div>
             </div>
-
             <div className="text-[12px] text-lightGray font-medium leading-[24px]">
-
                 <div className="flex items-center justify-between gap-3">
                     <p>Collateral ratio change</p>
                     <p className='text-primaryColor'>129% -{'>'} 140%</p>
@@ -247,7 +170,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                 </div>
             </div>
             <div>
-                <ButtonStyle1 disabled={!isRepayValid} action={handleCtaFunctions} text='Repay' />
+                <ButtonStyle1 disabled={repayAmount <= "0"} action={handleCtaFunctions} text='Repay' />
             </div>
         </div>
     )

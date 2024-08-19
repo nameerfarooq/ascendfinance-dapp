@@ -59,11 +59,11 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
             const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
             console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
-            // Step#3
+            // // Step#3
             const totalShares = troveCollSharesAndDebt[0] - sharesAmount;
             console.log("totalShares: ", totalShares);
 
-            // Step # 4
+            // // Step # 4
             const NCIR = await computeNominalCR(
                 multiCollateralHintHelpersAddress,
                 totalShares,
@@ -71,11 +71,11 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
             );
             console.log("NCIR: ", NCIR);
 
-            // Step#5
+            // // Step#5
             const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
             console.log("troveOwnersCount: ", troveOwnersCount);
 
-            // Step#6
+            // // Step#6
             const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
             const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
@@ -88,7 +88,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
             );
             console.log("approxHint: ", approxHint);
 
-            // Step#7
+            // // Step#7
             const insertPosition = await findInsertPosition(
                 sortedTrovesAddress,
                 NCIR,
@@ -96,7 +96,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
                 approxHint[0],
             );
 
-            // Step#8
+            // // Step#8
             const tx = await withdrawColl(
                 borrowerOperationsAddress,
                 troveManagerAddress,
