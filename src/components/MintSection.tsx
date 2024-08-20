@@ -17,9 +17,8 @@ import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
-import { setLoader } from "@/lib/features/loader/loaderSlice";
 // import { setActiveVault } from "@/lib/features/vault/vaultSlice";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppSelector } from "@/lib/hooks";
 // import type { VaultType } from "@/types";
 // import { getDefaultChainId } from "@/utils/chain";
 
@@ -30,7 +29,6 @@ interface MintSectionProps {
 }
 const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { isConnected, chain, address } = useAccount();
-  const dispatch = useAppDispatch();
   // const router = useRouter();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
   const { balanceOf, allowance, approve } = useERC20Contract();
@@ -63,15 +61,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     setshowVaults(!showVaults);
   };
 
-  const setLoaderTrue = async (condition: 'hidden' | 'loading' | "success" | "failed", text1: string, text2: string) => {
-    dispatch(
-      setLoader({
-        condition,
-        text1,
-        text2,
-      }),
-    );
-  };
+
 
   const setDepositToMax = () => {
     const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
@@ -137,13 +127,12 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     amount: bigint,
   ) => {
     if (address && depositAmount) {
-      setLoaderTrue("loading", "Approval Pending", depositAmount);
 
       await approve(tokenAddress, spenderAddress, amount).then((tx) => {
         if (tx?.status === "success") {
-          setLoaderTrue("success", "Approval Success", depositAmount);
+
+          fetchTokenAllowance(tokenAddress, address, spenderAddress);
         }
-        fetchTokenAllowance(tokenAddress, address, spenderAddress);
       })
     }
   };
@@ -157,7 +146,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     try {
       if (address) {
-        dispatch(setLoader({ condition: "loading", text1: 'Transaction in progress', text2: "" }))
 
         // Step#1
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
@@ -212,11 +200,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
-        dispatch(setLoader({ condition: "success", text1: 'Transaction Successfull', text2: "" }))
 
       }
     } catch (error: any) {
-      dispatch(setLoader({ condition: "failed", text1: 'Transaction failed', text2: error.message.toString() }))
+      console.log("Error in Minting:", error.message)
     }
 
   };

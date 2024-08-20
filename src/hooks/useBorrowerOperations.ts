@@ -1,10 +1,13 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address, type TransactionReceipt } from "viem";
+import { useDispatch } from "react-redux";
+import { createWalletClient, custom, formatUnits, type Address, type TransactionReceipt } from "viem";
 import { waitForTransactionReceipt, writeContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
 import BorrowerOperations_ABI from "@/abis/BorrowerOperations.json";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
+import { useAppSelector } from "@/lib/hooks";
 import { wagmiConfig } from "@/wagmi";
 
 const publicClient = wagmiConfig.getClient();
@@ -61,6 +64,8 @@ export const useBorrowerOperations = (): {
   ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
+  const dispatch = useDispatch()
+  const activeVault = useAppSelector((state) => state.vault.activeVault);
 
   const openTrove = useCallback(
     async (
@@ -74,6 +79,8 @@ export const useBorrowerOperations = (): {
       lowerHint: Address,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         if (
           isConnected &&
           address &&
@@ -112,9 +119,18 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx) {
+
+            dispatch(setLoader({ condition: "success", text1: 'Deposited', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Transaction Failed', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          }
+
           return tx;
         }
       } catch (error) {
+        dispatch(setLoader({ condition: "failed", text1: 'Transaction Failed', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
         console.log("openTrove(): ", error);
       }
     },
@@ -128,6 +144,8 @@ export const useBorrowerOperations = (): {
 
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Repaying', text2: "GREEN" }))
+
         if (
           isConnected &&
           address &&
@@ -157,9 +175,17 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx?.status === "success") {
+            dispatch(setLoader({ condition: "success", text1: 'Repayed', text2: "GREEN" }))
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: "" }))
+
+          }
           return tx;
         }
       } catch (error) {
+        dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: "" }))
+
         console.log("closeTrove(): ", error);
       }
     },
@@ -176,6 +202,8 @@ export const useBorrowerOperations = (): {
       lowerHint: Address,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         if (
           isConnected &&
           address &&
@@ -204,9 +232,18 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx?.status === "success") {
+            dispatch(setLoader({ condition: "success", text1: 'Deposited', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          }
           return tx;
         }
       } catch (error) {
+        dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         console.log("addColl(): ", error);
       }
     },
@@ -222,6 +259,8 @@ export const useBorrowerOperations = (): {
       lowerHint: Address,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Withdrawing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         if (
           isConnected &&
           address &&
@@ -250,10 +289,19 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx?.status === "success") {
+            dispatch(setLoader({ condition: "success", text1: 'Withdrawed', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Withdrawing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          }
           return tx;
         }
       } catch (error) {
         console.log("withdrawColl(): ", error);
+        dispatch(setLoader({ condition: "failed", text1: 'Withdrawing', text2: `${formatUnits(collateralAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
       }
     },
     [isConnected, address],
@@ -268,6 +316,8 @@ export const useBorrowerOperations = (): {
       lowerHint: Address,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Repaying', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} GREEN` }))
+
         if (
           isConnected &&
           address &&
@@ -296,10 +346,19 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx?.status === "success") {
+            dispatch(setLoader({ condition: "success", text1: 'Repayed', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} GREEN` }))
+
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} GREEN` }))
+
+          }
           return tx;
         }
       } catch (error) {
         console.log("repayDebt(): ", error);
+        dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} GREEN` }))
+
       }
     },
     [isConnected, address],
@@ -316,6 +375,8 @@ export const useBorrowerOperations = (): {
       lowerHint: Address,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(setLoader({ condition: "loading", text1: 'Minting', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         if (
           isConnected &&
           address &&
@@ -352,10 +413,19 @@ export const useBorrowerOperations = (): {
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
           console.log("tx: ", tx);
+          if (tx?.status === "success") {
+            dispatch(setLoader({ condition: "success", text1: 'Minted', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          } else {
+            dispatch(setLoader({ condition: "failed", text1: 'Minting', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+          }
           return tx;
         }
       } catch (error) {
         console.log("withdrawDebt(): ", error);
+        dispatch(setLoader({ condition: "failed", text1: 'Minting', text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
       }
     },
     [isConnected, address],

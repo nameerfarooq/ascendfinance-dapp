@@ -131,7 +131,7 @@ export const useERC20Contract = (): {
           setLoader({
             condition: 'loading',
             text1: 'Approval pending',
-            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
           })
         );
         if (isConnected && address && tokenAddress && spenderAddress && amount && publicClient) {
@@ -149,13 +149,24 @@ export const useERC20Contract = (): {
           });
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
-          dispatch(
-            setLoader({
-              condition: 'success',
-              text1: 'Approval granted',
-              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
-            })
-          );
+          if (tx?.status === "success") {
+
+            dispatch(
+              setLoader({
+                condition: 'success',
+                text1: 'Approval granted',
+                text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+              })
+            );
+          } else {
+            dispatch(
+              setLoader({
+                condition: 'failed',
+                text1: 'Approval rejected',
+                text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+              })
+            );
+          }
           return tx;
         }
       } catch (error: any) {
@@ -164,7 +175,7 @@ export const useERC20Contract = (): {
           setLoader({
             condition: 'failed',
             text1: 'Approval rejected',
-            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
           })
         );
         // const keys = Object.keys(error);
