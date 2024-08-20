@@ -20,6 +20,11 @@ export const useTroveManager = (): {
   convertSharesToYieldTokens: (troveManagerAddress: Address, shares: bigint) => Promise<bigint>;
   fetchPriceInUsd: (troveManagerAddress: Address) => Promise<bigint>;
   MCR: (troveManagerAddress: Address) => Promise<bigint>;
+  getCurrentICR: (
+    troveManagerAddress: Address,
+    walletAddress: Address,
+    usdPrice: bigint,
+  ) => Promise<bigint>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -191,6 +196,34 @@ export const useTroveManager = (): {
     [isConnected, address],
   );
 
+  const getCurrentICR = useCallback(
+    async (
+      troveManagerAddress: Address,
+      walletAddress: Address,
+      usdPrice: bigint,
+    ): Promise<bigint> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const collateralRatio = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "getCurrentICR",
+            args: [walletAddress, usdPrice],
+          });
+
+          return collateralRatio as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("getCurrentICR(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     convertYieldTokensToShares,
     getTroveOwnersCount,
@@ -199,6 +232,7 @@ export const useTroveManager = (): {
     convertSharesToYieldTokens,
     fetchPriceInUsd,
     MCR,
+    getCurrentICR,
   };
 };
 
