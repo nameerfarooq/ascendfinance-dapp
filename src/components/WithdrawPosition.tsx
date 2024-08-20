@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState, type ChangeEvent } from "react";
 
+import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -11,13 +12,15 @@ import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
 
 import ButtonStyle1 from "./Buttons/ButtonStyle1";
 
 
+
 interface WithdrawPositionProps {
-    activeVault: VaultType | undefined;
+    activeVault: VaultType;
 }
 const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     const { chain, address } = useAccount();
@@ -32,7 +35,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     const [isValidated, setIsValidated] = useState(true)
     const [error, setError] = useState("")
     const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n)
-
+    const dispatch = useDispatch()
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 
     const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -56,65 +59,74 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         borrowerOperationsAddress: Address,
         amount: bigint,
     ) => {
-        if (address && activeVault) {
-            console.log("amount :", amount)
-            // Step#1
-            const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
-            console.log("sharesAmount: ", sharesAmount);
+        try {
+            dispatch(setLoader({ condition: "loading", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+            if (address && activeVault) {
+                console.log("amount :", amount)
+                // Step#1
+                const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
+                console.log("sharesAmount: ", sharesAmount);
 
-            // Step#2
-            const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
-            console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+                // Step#2
+                const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+                console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
-            // // Step#3
-            const totalShares = troveCollSharesAndDebt[0] - sharesAmount;
-            console.log("totalShares: ", totalShares);
+                // // Step#3
+                const totalShares = troveCollSharesAndDebt[0] - sharesAmount;
+                console.log("totalShares: ", totalShares);
 
-            // // Step # 4
-            const NCIR = await computeNominalCR(
-                multiCollateralHintHelpersAddress,
-                totalShares,
-                troveCollSharesAndDebt[1],
-            );
-            console.log("NCIR: ", NCIR);
+                // // Step # 4
+                const NCIR = await computeNominalCR(
+                    multiCollateralHintHelpersAddress,
+                    totalShares,
+                    troveCollSharesAndDebt[1],
+                );
+                console.log("NCIR: ", NCIR);
 
-            // // Step#5
-            const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-            console.log("troveOwnersCount: ", troveOwnersCount);
+                // // Step#5
+                const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+                console.log("troveOwnersCount: ", troveOwnersCount);
 
-            // // Step#6
-            const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
-            const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+                // // Step#6
+                const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+                const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
-            const approxHint = await getApproxHint(
-                multiCollateralHintHelpersAddress,
-                troveManagerAddress,
-                NCIR,
-                numTrials.toString(),
-                inputRandomSeed,
-            );
-            console.log("approxHint: ", approxHint);
+                const approxHint = await getApproxHint(
+                    multiCollateralHintHelpersAddress,
+                    troveManagerAddress,
+                    NCIR,
+                    numTrials.toString(),
+                    inputRandomSeed,
+                );
+                console.log("approxHint: ", approxHint);
 
-            // // Step#7
-            const insertPosition = await findInsertPosition(
-                sortedTrovesAddress,
-                NCIR,
-                approxHint[0],
-                approxHint[0],
-            );
+                // // Step#7
+                const insertPosition = await findInsertPosition(
+                    sortedTrovesAddress,
+                    NCIR,
+                    approxHint[0],
+                    approxHint[0],
+                );
 
-            // // Step#8
-            const tx = await withdrawColl(
-                borrowerOperationsAddress,
-                troveManagerAddress,
-                address,
-                amount,
-                insertPosition[0],
-                insertPosition[1],
-            );
-            console.log("tx: ", tx);
+                // // Step#8
+                const tx = await withdrawColl(
+                    borrowerOperationsAddress,
+                    troveManagerAddress,
+                    address,
+                    amount,
+                    insertPosition[0],
+                    insertPosition[1],
+                );
+                console.log("tx: ", tx);
+
+                setwithdrawAmount("0")
+
+            }
+        } catch (error) {
+            dispatch(setLoader({ condition: "failed", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
 
         }
+
     };
 
     const handleCtaFunctions = () => {
@@ -146,7 +158,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     useEffect(() => {
         const getValidate = async () => {
             if (address && chain && activeVault) {
-               
+
                 console.log("debouncedwithdrawAmount: ", debouncedwithdrawAmount);
                 const withDrawAmount = parseUnits(debouncedwithdrawAmount, activeVault.token.decimals);
                 if (withDrawAmount < 0n) {

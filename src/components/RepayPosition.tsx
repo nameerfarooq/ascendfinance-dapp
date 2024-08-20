@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ChangeEvent } from "react";
 
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -12,10 +14,12 @@ import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
 
+
 interface RepayPositionProps {
-    activeVault: VaultType | undefined;
+    activeVault: VaultType;
 }
 const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const { chain, address } = useAccount();
@@ -24,9 +28,9 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
     const { findInsertPosition } = useSortedTroves();
     const { repayDebt, closeTrove } = useBorrowerOperations();
-
+    const dispatch = useDispatch()
     const [repayAmount, setRepayAmount] = useState<string>("0");
-
+    const router = useRouter()
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 
     const debouncedRepayAmount = useDebounce(repayAmount, 350);
@@ -56,6 +60,11 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             // Step#1
             const tx = await closeTrove(borrowerOperationsAddress, troveManagerAddress, address)
             console.log("tx: ", tx);
+            if (tx?.status === "success") {
+                setTimeout(() => {
+                    router.push('/positions')
+                }, 4000);
+            }
         }
     };
     const getTokenRepayed = async (
@@ -65,62 +74,71 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         borrowerOperationsAddress: Address,
         amount: bigint,
     ) => {
-        if (address && activeVault) {
-            // Step#1
-            const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
-            console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+        try {
+            dispatch(setLoader({ condition: "loading", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+            if (address && activeVault) {
+                // Step#1
+                const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+                console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
-            // Step#2
-            console.log("Repay Amount", parseUnits(debouncedRepayAmount, activeVault.token.decimals));
-            const userDebt =
-                troveCollSharesAndDebt[1] - parseUnits(debouncedRepayAmount, activeVault.token.decimals);
-            console.log("userDebt", userDebt);
+                // Step#2
+                console.log("Repay Amount", parseUnits(debouncedRepayAmount, activeVault.token.decimals));
+                const userDebt =
+                    troveCollSharesAndDebt[1] - parseUnits(debouncedRepayAmount, activeVault.token.decimals);
+                console.log("userDebt", userDebt);
 
-            // Step # 3
-            const NCIR = await computeNominalCR(
-                multiCollateralHintHelpersAddress,
-                troveCollSharesAndDebt[0],
-                userDebt,
-            );
-            console.log("NCIR: ", NCIR);
+                // Step # 3
+                const NCIR = await computeNominalCR(
+                    multiCollateralHintHelpersAddress,
+                    troveCollSharesAndDebt[0],
+                    userDebt,
+                );
+                console.log("NCIR: ", NCIR);
 
-            // Step#4
-            const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-            console.log("troveOwnersCount: ", troveOwnersCount);
+                // Step#4
+                const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+                console.log("troveOwnersCount: ", troveOwnersCount);
 
-            // Step#5
-            const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
-            const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+                // Step#5
+                const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+                const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
-            const approxHint = await getApproxHint(
-                multiCollateralHintHelpersAddress,
-                troveManagerAddress,
-                NCIR,
-                numTrials.toString(),
-                inputRandomSeed,
-            );
-            console.log("approxHint: ", approxHint);
+                const approxHint = await getApproxHint(
+                    multiCollateralHintHelpersAddress,
+                    troveManagerAddress,
+                    NCIR,
+                    numTrials.toString(),
+                    inputRandomSeed,
+                );
+                console.log("approxHint: ", approxHint);
 
-            // Step#6
-            const insertPosition = await findInsertPosition(
-                sortedTrovesAddress,
-                NCIR,
-                approxHint[0],
-                approxHint[0],
-            );
-            console.log("insertPosition: ", insertPosition);
+                // Step#6
+                const insertPosition = await findInsertPosition(
+                    sortedTrovesAddress,
+                    NCIR,
+                    approxHint[0],
+                    approxHint[0],
+                );
+                console.log("insertPosition: ", insertPosition);
 
-            // Step#7
-            const tx = await repayDebt(
-                borrowerOperationsAddress,
-                troveManagerAddress,
-                address,
-                amount,
-                insertPosition[0],
-                insertPosition[1],
-            );
-            console.log("tx: ", tx);
+                // Step#7
+                const tx = await repayDebt(
+                    borrowerOperationsAddress,
+                    troveManagerAddress,
+                    address,
+                    amount,
+                    insertPosition[0],
+                    insertPosition[1],
+                );
+                console.log("tx: ", tx);
+
+                setRepayAmount("0")
+            }
+        } catch (error) {
+            dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+
         }
+
     };
 
     const handleCtaFunctions = () => {
@@ -200,6 +218,10 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                     setWarning("");
                     setError("");
                 }
+            } else {
+                setIsValidated(true);
+                setWarning("");
+                setError("");
             }
         };
         getValidate();
@@ -210,7 +232,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             <div className="flex flex-col gap-2">
                 <p className="font-medium text-[12px] leading-[24px]">Repay GREEN</p>
                 <div
-                    className={`${!isValidated && "border-[#FF5710]"} ${warning && "border-[#ffd025]"} border-transparent border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+                    className={`${!isValidated ? "border-[#FF5710]" : warning ? "border-[#ffd025]" : "border-transparent"}  border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
                 >
                     <input
                         value={repayAmount}

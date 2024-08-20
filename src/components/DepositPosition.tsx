@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ChangeEvent } from "react";
 
+import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -14,10 +15,11 @@ import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
 
 interface DepositPositionProps {
-  activeVault: VaultType | undefined;
+  activeVault: VaultType;
 }
 
 const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
@@ -33,11 +35,12 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const [depositAmount, setDepositAmount] = useState<string>("0");
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
-  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(true);
+  const [depositerror, setDepositError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
-
+  const dispatch = useDispatch()
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
       balanceOf(tokenAddress, walletAddress).then((balance) => {
@@ -94,67 +97,78 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     borrowerOperationsAddress: Address,
     amount: bigint,
   ) => {
-    if (address && activeVault) {
-      // Step#1
-      const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
-      console.log("sharesAmount: ", sharesAmount);
+    try {
 
-      // Step#2
-      const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
-      console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+      if (address && activeVault) {
+        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        // Step#1
+        const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
+        console.log("sharesAmount: ", sharesAmount);
 
-      // Step#3
-      const totalShares = sharesAmount + troveCollSharesAndDebt[0];
-      console.log("totalShares: ", totalShares);
+        // Step#2
+        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+        console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
-      // Step # 4
-      const NCIR = await computeNominalCR(
-        multiCollateralHintHelpersAddress,
-        totalShares,
-        troveCollSharesAndDebt[1],
-      );
-      console.log("NCIR: ", NCIR);
+        // Step#3
+        const totalShares = sharesAmount + troveCollSharesAndDebt[0];
+        console.log("totalShares: ", totalShares);
 
-      // Step#5
-      const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-      console.log("troveOwnersCount: ", troveOwnersCount);
+        // Step # 4
+        const NCIR = await computeNominalCR(
+          multiCollateralHintHelpersAddress,
+          totalShares,
+          troveCollSharesAndDebt[1],
+        );
+        console.log("NCIR: ", NCIR);
 
-      // Step#6
-      const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
-      const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+        // Step#5
+        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        console.log("troveOwnersCount: ", troveOwnersCount);
 
-      const approxHint = await getApproxHint(
-        multiCollateralHintHelpersAddress,
-        troveManagerAddress,
-        NCIR,
-        numTrials.toString(),
-        inputRandomSeed,
-      );
-      console.log("approxHint: ", approxHint);
+        // Step#6
+        const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+        const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
-      // Step#7
-      const insertPosition = await findInsertPosition(
-        sortedTrovesAddress,
-        NCIR,
-        approxHint[0],
-        approxHint[0],
-      );
-      console.log("insertPosition: ", insertPosition);
+        const approxHint = await getApproxHint(
+          multiCollateralHintHelpersAddress,
+          troveManagerAddress,
+          NCIR,
+          numTrials.toString(),
+          inputRandomSeed,
+        );
+        console.log("approxHint: ", approxHint);
 
-      // Step#8
-      const tx = await addColl(
-        borrowerOperationsAddress,
-        troveManagerAddress,
-        address,
-        parseUnits(depositAmount, activeVault.token.decimals),
-        insertPosition[0],
-        insertPosition[1],
-      );
-      console.log("tx: ", tx);
+        // Step#7
+        const insertPosition = await findInsertPosition(
+          sortedTrovesAddress,
+          NCIR,
+          approxHint[0],
+          approxHint[0],
+        );
+        console.log("insertPosition: ", insertPosition);
 
-      // Step#9
-      fetchTokenbalance(activeVault.token.address, address);
+        // Step#8
+        const tx = await addColl(
+          borrowerOperationsAddress,
+          troveManagerAddress,
+          address,
+          parseUnits(depositAmount, activeVault.token.decimals),
+          insertPosition[0],
+          insertPosition[1],
+        );
+        console.log("tx: ", tx);
+
+        // Step#9
+        fetchTokenbalance(activeVault.token.address, address);
+
+        setDepositAmount("0")
+      }
+
+    } catch (error) {
+      dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
     }
+
   };
 
   const handleCtaFunctions = () => {
@@ -191,22 +205,29 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   };
 
   const validateDeposit = () => {
-    let isValid = false;
     const amount = parseFloat(depositAmount);
     if (
       activeVault &&
       amount > 0 &&
       amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))
     ) {
-      isValid = true;
+      setIsDepositValid(true);
+      setDepositError("")
+    } else if (amount < 0) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount must be greater than 0")
+    } else {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount is greater than token balance")
     }
 
-    setIsDepositValid(isValid);
   };
 
   useEffect(() => {
-    validateDeposit();
+    if (debouncedDepositAmount > "0" || debouncedDepositAmount < "0") {
 
+      validateDeposit();
+    }
     if (address && chain && activeVault) {
       const borrowerOperationsAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
@@ -259,7 +280,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
           </div>
         </div>
 
-        <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
+        <div className={`${!isDepositValid ? 'border-[#FF5710]' : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
           <input
             type="number"
             placeholder={`1.000 ${activeVault?.token.symbol}`}
@@ -273,6 +294,8 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
             </button>
           </div>
         </div>
+        {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
+
       </div>
 
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
