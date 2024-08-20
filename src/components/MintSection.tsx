@@ -259,6 +259,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (amount > 0 && amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))) {
       setIsDepositValid(true);
       setDepositError("")
+
+    } else if (amount < 0) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount must be greater than 0")
     } else {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance")
@@ -278,6 +282,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (amount > 0 && amount <= maxMintAmount) {
       setIsMintValid(true)
       setMintError("")
+    } else if (mintAmount < "0") {
+      setIsMintValid(false)
+      setMintError("Desired mint value must be greater than 0")
     } else {
       setIsMintValid(false)
       setMintError("Desired mint value is greater than tokens available for mint")
@@ -286,7 +293,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   useEffect(() => {
-    if (debouncedDepositAmount > "0") {
+    if (debouncedDepositAmount > "0" || debouncedDepositAmount < "0") {
 
       validateDeposit();
     }
@@ -304,7 +311,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   }, [debouncedDepositAmount, isDebtRatioAuto]);
 
   useEffect(() => {
-    if (debouncedMintAmount > "0") {
+    if (debouncedMintAmount > "0" || debouncedMintAmount < "0") {
 
       validateMint();
     }
@@ -461,7 +468,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               </div>
             </div>
 
-            {depositerror && <p className="text-[#FF5710] mt-4">{depositerror}</p>}
+            {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
 
           </div>
 

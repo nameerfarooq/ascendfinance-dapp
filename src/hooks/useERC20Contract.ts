@@ -1,11 +1,16 @@
 import { useCallback } from "react";
 
-import { createWalletClient, custom, type Address, type TransactionReceipt } from "viem";
+import { useDispatch } from "react-redux";
+import { createWalletClient, custom, formatUnits, type Address, type TransactionReceipt } from "viem";
 import { readContract, waitForTransactionReceipt, writeContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
+// eslint-disable-next-line import/order
 import ERC20_ABI from "@/abis/ERC20.json";
 // import getContractInstance from "@/utils/getContractInstance";
+
+import { setLoader } from "@/lib/features/loader/loaderSlice";
+import { useAppSelector } from "@/lib/hooks";
 import { wagmiConfig } from "@/wagmi";
 
 const publicClient = wagmiConfig.getClient();
@@ -47,6 +52,7 @@ const publicClient = wagmiConfig.getClient();
 // };
 
 export const useERC20Contract = (): {
+
   balanceOf: (tokenAddress: Address, walletAddress: Address) => Promise<bigint>;
   allowance: (
     tokenAddress: Address,
@@ -60,6 +66,8 @@ export const useERC20Contract = (): {
   ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
+  const dispatch = useDispatch()
+  const activeVault = useAppSelector((state) => state.vault.activeVault);
 
   const balanceOf = useCallback(
     async (tokenAddress: Address, walletAddress: Address): Promise<bigint> => {
@@ -119,6 +127,13 @@ export const useERC20Contract = (): {
       amount: bigint,
     ): Promise<TransactionReceipt | void> => {
       try {
+        dispatch(
+          setLoader({
+            condition: 'loading',
+            text1: 'Approval pending',
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
+          })
+        );
         if (isConnected && address && tokenAddress && spenderAddress && amount && publicClient) {
           const walletClient = createWalletClient({
             chain: publicClient.chain,
@@ -134,11 +149,24 @@ export const useERC20Contract = (): {
           });
 
           const tx = await waitForTransactionReceipt(publicClient, { hash });
+          dispatch(
+            setLoader({
+              condition: 'success',
+              text1: 'Approval granted',
+              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
+            })
+          );
           return tx;
         }
       } catch (error: any) {
         console.log("approve(): ", error);
-        
+        dispatch(
+          setLoader({
+            condition: 'failed',
+            text1: 'Approval rejected',
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.name}`,
+          })
+        );
         // const keys = Object.keys(error);
 
         // for (const key of keys) {

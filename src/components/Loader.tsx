@@ -2,9 +2,12 @@
 import { useEffect } from "react";
 
 import Image from "next/image";
+import { RiCheckFill } from "react-icons/ri";
+import { RiCloseLine } from "react-icons/ri";
 
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+
 
 import spinner from "../../public/icons/spinner.png";
 import ascendLogo from "../../public/img/ascendLogo.svg";
@@ -32,20 +35,35 @@ const Loader = () => {
 
             <>
               <div className="relative flex items-center justify-center w-full min-w-[200px] h-[200px]">
-                <div>
-                  <Image quality={100} src={ascendLogo} alt="Ascend icon" width={70} height={70} />
-                </div>
+                {condition === "success" &&
+                  <div className="rounded-full flex items-center justify-center p-5 bg-primaryColor">
+                    <RiCheckFill color="white" size={100} />
 
-                <div className="absolute">
-                  <Image
-                    className="spinner-icon-animate"
-                    quality={100}
-                    src={spinner}
-                    alt="spinner icon"
-                    width={200}
-                    height={200}
-                  />
-                </div>
+                  </div>
+                }
+                {condition === "failed" &&
+                  <div className="rounded-full flex items-center justify-center p-5 bg-[#FF5710]">
+                    <RiCloseLine
+                      color="white" size={100} />
+                  </div>
+                }
+                {condition === "loading" && <>
+                  <div>
+                    <Image quality={100} src={ascendLogo} alt="Ascend icon" width={70} height={70} />
+                  </div>
+
+                  <div className="absolute">
+                    <Image
+                      className="spinner-icon-animate"
+                      quality={100}
+                      src={spinner}
+                      alt="spinner icon"
+                      width={200}
+                      height={200}
+                    />
+                  </div>
+                </>
+                }
               </div>
             </>
 
@@ -53,14 +71,15 @@ const Loader = () => {
               className={`text-center text-[18px] font-bold ${condition === "loading"
                 ? "text-white"
                 : condition === "success"
-                  ? "text-whitetext-primaryColor"
+                  ? "text-primaryColor"
                   : condition === "failed"
                     ? "text-[#FF5710]"
                     : ""
                 }`}
             >
               {text1}
-            </p>         <p className="text-center text-[18px] font-bold text-primaryColor">{text2}</p>
+            </p>
+            <p className="text-center text-[18px] font-bold text-white">{text2}</p>
           </div>
         </div>
       )}
