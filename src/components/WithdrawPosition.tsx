@@ -20,7 +20,7 @@ import ButtonStyle1 from "./Buttons/ButtonStyle1";
 
 
 interface WithdrawPositionProps {
-    activeVault: VaultType;
+    activeVault: VaultType | undefined;
 }
 const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     const { chain, address } = useAccount();
@@ -60,7 +60,9 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         amount: bigint,
     ) => {
         try {
-            dispatch(setLoader({ condition: "loading", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+            if (activeVault) {
+                dispatch(setLoader({ condition: "loading", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+            }
             if (address && activeVault) {
                 console.log("amount :", amount)
                 // Step#1
@@ -123,7 +125,9 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
 
             }
         } catch (error) {
-            dispatch(setLoader({ condition: "failed", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+            if (activeVault) {
+                dispatch(setLoader({ condition: "failed", text1: 'Withdrawing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+            }
 
         }
 
