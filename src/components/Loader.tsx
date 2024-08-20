@@ -1,40 +1,37 @@
 "use client";
+import { useEffect } from "react";
 
 import Image from "next/image";
-import { RxCross2 } from "react-icons/rx";
 
 import { setLoader } from "@/lib/features/loader/loaderSlice";
-import { useAppSelector, useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import spinner from "../../public/icons/spinner.png";
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
 const Loader = () => {
   const dispatch = useAppDispatch();
+  const { condition, text1, text2 } = useAppSelector((state) => state.loader);
 
-  const { loading, text1, text2 } = useAppSelector((state) => state.loader);
+  useEffect(() => {
+    if (condition === "success" || condition === "failed") {
+      const timeout = setTimeout(() => {
+        dispatch(setLoader({ condition: "hidden", text1: "", text2: "" }));
+      }, 4000);
 
-  const clearLoader = () => {
-    dispatch(
-      setLoader({
-        loading: false,
-        text1: "",
-        text2: "",
-      }),
-    );
-  };
+      return () => clearTimeout(timeout);
+    }
+  }, [condition, dispatch]);
+
 
   return (
     <>
-      {loading && (
+      {(condition === "loading" || condition === "success" || condition === "failed") && (
         <div className="absolute z-50 top-0 left-0 w-full h-screen bg-black bg-opacity-70 flex items-center justify-center">
           <div className="relative rounded-3xl flex shadowCustom flex-col gap-4 py-12 px-12 bg-baseColor min-w-[150px]">
-            <div onClick={clearLoader} className="absolute top-8 right-5 cursor-pointer">
-              <RxCross2 size={16} color="white" />
-            </div>
 
             <>
-              <div className="relative flex items-center justify-center w-[200px] h-[200px]">
+              <div className="relative flex items-center justify-center w-full min-w-[200px] h-[200px]">
                 <div>
                   <Image quality={100} src={ascendLogo} alt="Ascend icon" width={70} height={70} />
                 </div>
@@ -52,13 +49,24 @@ const Loader = () => {
               </div>
             </>
 
-            <p className="text-center text-[18px] font-bold text-white">{text1}</p>
-            <p className="text-center text-[18px] font-bold text-primaryColor">{text2}</p>
+            <p
+              className={`text-center text-[18px] font-bold ${condition === "loading"
+                ? "text-white"
+                : condition === "success"
+                  ? "text-whitetext-primaryColor"
+                  : condition === "failed"
+                    ? "text-[#FF5710]"
+                    : ""
+                }`}
+            >
+              {text1}
+            </p>         <p className="text-center text-[18px] font-bold text-primaryColor">{text2}</p>
           </div>
         </div>
       )}
     </>
   );
+
 };
 
 export default Loader;

@@ -49,8 +49,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   );
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
-  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
-  const [isMintValid, setIsMintValid] = useState<boolean>(false);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(true);
+  const [depositerror, setDepositError] = useState<string>("");
+  const [isMintValid, setIsMintValid] = useState<boolean>(true);
+  const [minterror, setMintError] = useState<string>("");
   const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -61,10 +63,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     setshowVaults(!showVaults);
   };
 
-  const setLoaderTrue = async (loading: boolean, text1: string, text2: string) => {
+  const setLoaderTrue = async (condition: 'hidden' | 'loading' | "success" | "failed", text1: string, text2: string) => {
     dispatch(
       setLoader({
-        loading,
+        condition,
         text1,
         text2,
       }),
@@ -135,17 +137,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     amount: bigint,
   ) => {
     if (address && depositAmount) {
-      setLoaderTrue(true, "Approval Pending", depositAmount);
+      setLoaderTrue("loading", "Approval Pending", depositAmount);
 
       await approve(tokenAddress, spenderAddress, amount).then((tx) => {
         if (tx?.status === "success") {
-          setLoaderTrue(true, "Approval Success", depositAmount);
-          setTimeout(() => {
-            setLoaderTrue(false, "", "");
-          }, 1500);
+          setLoaderTrue("success", "Approval Success", depositAmount);
         }
         fetchTokenAllowance(tokenAddress, address, spenderAddress);
-      });
+      })
     }
   };
 
@@ -156,61 +155,70 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     borrowerOperationsAddress: Address,
     amount: bigint,
   ) => {
-    if (address) {
-      // Step#1
-      const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
-      console.log("sharesAmount: ", sharesAmount);
+    try {
+      if (address) {
+        dispatch(setLoader({ condition: "loading", text1: 'Transaction in progress', text2: "" }))
 
-      // Step#2
-      const NCIR = await computeNominalCR(
-        multiCollateralHintHelpersAddress,
-        sharesAmount,
-        parseUnits(mintAmount, 18),
-      );
-      console.log("NCIR: ", NCIR);
+        // Step#1
+        const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
+        console.log("sharesAmount: ", sharesAmount);
 
-      // Step#3
-      const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-      console.log("troveOwnersCount: ", troveOwnersCount);
+        // Step#2
+        const NCIR = await computeNominalCR(
+          multiCollateralHintHelpersAddress,
+          sharesAmount,
+          parseUnits(mintAmount, 18),
+        );
+        console.log("NCIR: ", NCIR);
 
-      // Step#4
-      const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
-      const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+        // Step#3
+        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        console.log("troveOwnersCount: ", troveOwnersCount);
 
-      const approxHint = await getApproxHint(
-        multiCollateralHintHelpersAddress,
-        troveManagerAddress,
-        NCIR,
-        numTrials.toString(),
-        inputRandomSeed,
-      );
-      console.log("approxHint: ", approxHint);
+        // Step#4
+        const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+        const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
-      // Step#5
-      const insertPosition = await findInsertPosition(
-        sortedTrovesAddress,
-        NCIR,
-        approxHint[0],
-        approxHint[0],
-      );
-      console.log("insertPosition: ", insertPosition);
+        const approxHint = await getApproxHint(
+          multiCollateralHintHelpersAddress,
+          troveManagerAddress,
+          NCIR,
+          numTrials.toString(),
+          inputRandomSeed,
+        );
+        console.log("approxHint: ", approxHint);
 
-      // Step#6
-      const tx = await openTrove(
-        borrowerOperationsAddress,
-        troveManagerAddress,
-        address,
-        0n,
-        parseUnits(depositAmount, activeVault.token.decimals),
-        parseUnits(mintAmount, 18),
-        insertPosition[0],
-        insertPosition[1],
-      );
-      console.log("tx: ", tx);
+        // Step#5
+        const insertPosition = await findInsertPosition(
+          sortedTrovesAddress,
+          NCIR,
+          approxHint[0],
+          approxHint[0],
+        );
+        console.log("insertPosition: ", insertPosition);
 
-      // Step#7
-      fetchTokenbalance(activeVault.token.address, address);
+        // Step#6
+        const tx = await openTrove(
+          borrowerOperationsAddress,
+          troveManagerAddress,
+          address,
+          0n,
+          parseUnits(depositAmount, activeVault.token.decimals),
+          parseUnits(mintAmount, 18),
+          insertPosition[0],
+          insertPosition[1],
+        );
+        console.log("tx: ", tx);
+
+        // Step#7
+        fetchTokenbalance(activeVault.token.address, address);
+        dispatch(setLoader({ condition: "success", text1: 'Transaction Successfull', text2: "" }))
+
+      }
+    } catch (error: any) {
+      dispatch(setLoader({ condition: "failed", text1: 'Transaction failed', text2: error.message.toString() }))
     }
+
   };
 
   const handleCtaFunctions = () => {
@@ -247,17 +255,19 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   const validateDeposit = () => {
-    let isValid = false;
     const amount = parseFloat(depositAmount);
     if (amount > 0 && amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))) {
-      isValid = true;
+      setIsDepositValid(true);
+      setDepositError("")
+    } else {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount is greater than token balance")
     }
 
-    setIsDepositValid(isValid);
+
   };
 
   const validateMint = () => {
-    let isValid = false;
 
     const collateralRatioProportion = parseFloat(collateralRatio) / 100;
     const maxMintAmount =
@@ -266,14 +276,20 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
     const amount = parseFloat(mintAmount);
     if (amount > 0 && amount <= maxMintAmount) {
-      isValid = true;
+      setIsMintValid(true)
+      setMintError("")
+    } else {
+      setIsMintValid(false)
+      setMintError("Desired mint value is greater than tokens available for mint")
     }
 
-    setIsMintValid(isValid);
   };
 
   useEffect(() => {
-    validateDeposit();
+    if (debouncedDepositAmount > "0") {
+
+      validateDeposit();
+    }
 
     if (isDebtRatioAuto) {
       setMintToMax();
@@ -288,7 +304,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   }, [debouncedDepositAmount, isDebtRatioAuto]);
 
   useEffect(() => {
-    validateMint();
+    if (debouncedMintAmount > "0") {
+
+      validateMint();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount]);
 
@@ -426,7 +445,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               </p>
             </div>
 
-            <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
+            <div className={`${!isDepositValid ? 'border-[#FF5710]' : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
               <input
                 type="number"
                 placeholder={`1.000 ${activeVault.token.symbol}`}
@@ -441,6 +460,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                 </button>
               </div>
             </div>
+
+            {depositerror && <p className="text-[#FF5710] mt-4">{depositerror}</p>}
+
           </div>
 
           <div
@@ -495,7 +517,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             <div>
               <p>Mint</p>
 
-              <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
+              <div className={`${isMintValid ? "border-transparent" : 'border-[#FF5710]'} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
                 <input
                   type="number"
                   placeholder="1.000 weETH"
@@ -509,6 +531,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                   </button>
                 </div>
               </div>
+              {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
 
