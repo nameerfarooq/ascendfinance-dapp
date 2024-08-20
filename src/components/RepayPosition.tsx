@@ -19,7 +19,7 @@ import type { VaultType } from "@/types";
 
 
 interface RepayPositionProps {
-    activeVault: VaultType;
+    activeVault: VaultType | undefined;
 }
 const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const { chain, address } = useAccount();
@@ -75,7 +75,10 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         amount: bigint,
     ) => {
         try {
-            dispatch(setLoader({ condition: "loading", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+            if (activeVault) {
+
+                dispatch(setLoader({ condition: "loading", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+            }
             if (address && activeVault) {
                 // Step#1
                 const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
@@ -135,7 +138,9 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                 setRepayAmount("0")
             }
         } catch (error) {
-            dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+            if (activeVault) {
+                dispatch(setLoader({ condition: "failed", text1: 'Repaying', text2: `${formatUnits(amount, activeVault.token.decimals)} GREEN` }))
+            }
 
         }
 

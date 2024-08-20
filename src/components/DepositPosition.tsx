@@ -19,7 +19,7 @@ import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
 
 interface DepositPositionProps {
-  activeVault: VaultType;
+  activeVault: VaultType | undefined;
 }
 
 const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
@@ -165,7 +165,10 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
       }
 
     } catch (error) {
-      dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+      if (activeVault) {
+
+        dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault?.token.decimals)} ${activeVault?.token.symbol}` }))
+      }
 
     }
 

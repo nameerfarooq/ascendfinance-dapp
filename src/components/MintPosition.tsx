@@ -18,7 +18,7 @@ import type { VaultType } from "@/types";
 
 
 interface MintPositionProps {
-  activeVault: VaultType ;
+  activeVault: VaultType | undefined;
 }
 
 const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
@@ -60,7 +60,10 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     amount: bigint,
   ) => {
     try {
-      dispatch(setLoader({ condition: "loading", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+      if (activeVault) {
+
+        dispatch(setLoader({ condition: "loading", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+      }
       if (address && activeVault) {
         // Step#1
         const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
@@ -118,7 +121,9 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
         setMintAmount("0")
       }
     } catch (error) {
-      dispatch(setLoader({ condition: "failed", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+      if (activeVault) {
+        dispatch(setLoader({ condition: "failed", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+      }
 
     }
 
