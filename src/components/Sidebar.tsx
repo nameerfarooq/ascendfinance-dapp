@@ -8,6 +8,7 @@ import HorizontalLine from "./HorizontalLine";
 import SidebarBtn from "./SidebarBtn";
 import earnIcon from "../../public/icons/earnIcon.svg";
 import positionsIcon from "../../public/icons/positionsIcon.svg";
+import stabilityIcon from "../../public/icons/mintIcon.svg";
 import redeemIcon from "../../public/icons/redeemIcon.svg";
 import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 import logo from "../../public/img/ascendLogo.svg";
@@ -70,6 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => 
               <SidebarBtn icon={vaultsIcon} text="vaults" link="/" />
               <SidebarBtn icon={positionsIcon} text="positions" link="/positions" />
               <SidebarBtn icon={redeemIcon} text="redeem" link="/redeem" />
+              <SidebarBtn icon={stabilityIcon} text="stability pool" link="/stability-pool" />
               <SidebarBtn icon={earnIcon} text="earn" link="/earn" />
             </div>
           </div>
