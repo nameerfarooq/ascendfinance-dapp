@@ -53,7 +53,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
           </div>
 
           <div className="flex justify-between items-center gap-3">
-            <p className="font-medium text-[12px] leading-[24px]">Minted BLUE</p>
+            <p className="font-medium text-[12px] leading-[24px]">Minted GREEN</p>
             <p className="font-bold text-[12px] leading-[24px]">{mintedBlue}</p>
           </div>
 

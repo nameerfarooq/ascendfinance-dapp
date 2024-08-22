@@ -8,19 +8,21 @@ import Image from "next/image";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
+// import vaultsList from "@/constants/vaults";
+// import { setActiveVault } from "@/lib/features/vault/vaultSlice";
+// import type { VaultType } from "@/types";
+// import { getDefaultChainId } from "@/utils/chain";
+
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
-// import vaultsList from "@/constants/vaults";
 import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
-// import { setActiveVault } from "@/lib/features/vault/vaultSlice";
 import { useAppSelector } from "@/lib/hooks";
-// import type { VaultType } from "@/types";
-// import { getDefaultChainId } from "@/utils/chain";
+import { formatDecimals } from "@/utils/formatters";
 
 import goBackIcon from "../../public/icons/goBackIcon.svg";
 import mintIcon from "../../public/icons/mintIcon.svg";
@@ -39,11 +41,11 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
-  const [depositAmount, setDepositAmount] = useState<string>("0");
-  const [mintAmount, setMintAmount] = useState<string>("0");
+  const [depositAmount, setDepositAmount] = useState<string>("");
+  const [mintAmount, setMintAmount] = useState<string>("");
   const [isDebtRatioAuto, setIsDebtRatioAuto] = useState<boolean>(true);
-  const [collateralRatio, setCollateralRatio] = useState<string>(
-    process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0",
+  const [collateralRatio, setCollateralRatio] = useState<bigint>(
+    BigInt(process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0"),
   );
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
@@ -56,12 +58,11 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
   const debouncedMintAmount = useDebounce(mintAmount, 350);
+  const debouncedCollateralRatio = useDebounce(collateralRatio, 350);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
   };
-
-
 
   const setDepositToMax = () => {
     const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
@@ -69,17 +70,21 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   const setMintToMax = () => {
-    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const mintAmount =
-      (parseFloat(depositAmount) * parseFloat(formatUnits(tokenPrice_USD, 18))) /
-      collateralRatioProportion;
+    if (collateralRatio > 0) {
+      const collateralRatioProportion = collateralRatio / 100n;
+      const mintAmount =
+        (parseUnits(depositAmount, activeVault.token.decimals) * tokenPrice_USD) /
+        collateralRatioProportion;
 
-    setMintAmount(mintAmount.toString());
+      setMintAmount(formatUnits(mintAmount, 18));
+    } else {
+      setMintAmount("0");
+    }
   };
 
   const debtRatioStateChanger = (isAuto: boolean) => {
     setIsDebtRatioAuto(isAuto);
-    setCollateralRatio(process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0");
+    setCollateralRatio(BigInt(process.env.NEXT_PUBLIC_COLLATERAL_RATIO || "0"));
   };
 
   const handleDepositInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -94,7 +99,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const handleCollateralRatioChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
-    setCollateralRatio(value);
+
+    setCollateralRatio(parseUnits(value, 18));
   };
 
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
@@ -127,13 +133,11 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     amount: bigint,
   ) => {
     if (address && depositAmount) {
-
       await approve(tokenAddress, spenderAddress, amount).then((tx) => {
         if (tx?.status === "success") {
-
           fetchTokenAllowance(tokenAddress, address, spenderAddress);
         }
-      })
+      });
     }
   };
 
@@ -146,7 +150,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     try {
       if (address) {
-
         // Step#1
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
         console.log("sharesAmount: ", sharesAmount);
@@ -200,12 +203,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
-
       }
     } catch (error: any) {
-      console.log("Error in Minting:", error.message)
+      console.log("Error in Minting:", error.message);
     }
-
   };
 
   const handleCtaFunctions = () => {
@@ -242,50 +243,61 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   const validateDeposit = () => {
-    const amount = parseFloat(depositAmount);
-    if (amount > 0 && amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))) {
+    const amount = parseUnits(depositAmount, activeVault.token.decimals);
+
+    if (depositAmount === "") {
+      setDepositError("");
+    } else if (amount > 0 && amount <= tokenBalance) {
       setIsDepositValid(true);
-      setDepositError("")
-
-    } else if (amount < 0) {
+      setDepositError("");
+    } else if (amount > 0 && amount > tokenBalance) {
       setIsDepositValid(false);
-      setDepositError("Deposit amount must be greater than 0")
-    } else {
+      setDepositError("Deposit amount is greater than token balance");
+    } else if (amount <= 0) {
       setIsDepositValid(false);
-      setDepositError("Deposit amount is greater than token balance")
+      setDepositError("Deposit amount must be greater than 0");
     }
-
-
   };
 
   const validateMint = () => {
+    try {
+      let maxMintAmount = 0n;
 
-    const collateralRatioProportion = parseFloat(collateralRatio) / 100;
-    const maxMintAmount =
-      (parseFloat(depositAmount) * parseFloat(formatUnits(tokenPrice_USD, 18))) /
-      collateralRatioProportion;
+      if (collateralRatio > 0) {
+        const collateralRatioProportion = collateralRatio / 100n;
 
-    const amount = parseFloat(mintAmount);
-    if (amount > 0 && amount <= maxMintAmount) {
-      setIsMintValid(true)
-      setMintError("")
-    } else if (mintAmount < "0") {
-      setIsMintValid(false)
-      setMintError("Desired mint value must be greater than 0")
-    } else {
-      setIsMintValid(false)
-      setMintError("Desired mint value is greater than tokens available for mint")
+        maxMintAmount =
+          (parseUnits(depositAmount, activeVault.token.decimals) * tokenPrice_USD) /
+          collateralRatioProportion;
+      }
+
+      const amount = parseUnits(mintAmount, 18);
+
+      if (mintAmount === "") {
+        setMintError("");
+      } else if (amount > 0 && amount <= maxMintAmount) {
+        setIsMintValid(true);
+        setMintError("");
+      } else if (amount > 0 && amount > maxMintAmount) {
+        if (isDebtRatioAuto) {
+          setIsMintValid(false);
+          setMintError("Desired mint value is greater than tokens available for mint");
+        }
+      } else if (amount <= 0) {
+        setIsMintValid(false);
+        setMintError("Desired mint value must be greater than 0");
+      }
+    } catch (error) {
+      console.log(error);
     }
-
   };
 
   useEffect(() => {
-    if (debouncedDepositAmount > "0" || debouncedDepositAmount < "0") {
+    validateDeposit();
 
-      validateDeposit();
-    }
-
-    if (isDebtRatioAuto) {
+    if (debouncedDepositAmount === "") {
+      setMintAmount("");
+    } else {
       setMintToMax();
     }
 
@@ -298,9 +310,32 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   }, [debouncedDepositAmount, isDebtRatioAuto]);
 
   useEffect(() => {
-    if (debouncedMintAmount > "0" || debouncedMintAmount < "0") {
+    // Auto Mode: Set Mint Value & Set Validate Deposit
+    if (isDebtRatioAuto) {
+      if (debouncedDepositAmount === "") {
+        setMintAmount("");
+      } else {
+        setMintToMax();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedCollateralRatio]);
 
-      validateMint();
+  useEffect(() => {
+    validateMint();
+
+    // Custom Mode: Set Mint Value
+    if (!isDebtRatioAuto) {
+      let collateralRatioPercentage = 0n;
+
+      if (parseUnits(mintAmount, 18) > 0) {
+        collateralRatioPercentage =
+          ((tokenPrice_USD * parseUnits(depositAmount, activeVault.token.decimals)) /
+            parseUnits(mintAmount, 18)) *
+          100n;
+      }
+
+      setCollateralRatio(collateralRatioPercentage);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount]);
@@ -335,14 +370,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
             <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />
-            <p className="font-bold leading-[60px] text-[30px] text-white">Mint BLUE</p>
+            <p className="font-bold leading-[60px] text-[30px] text-white">Mint GREEN</p>
           </div>
 
           <p className="text-[14px] leading-[24px]">
-            To mint (borrow) BLUE, you are required to deposit a specific amount of collateral using
-            the Ascend platform, or have a pre-existing balance of ETH or stETH within the Ascend
-            Protocol. You can then generate BLUE against your collateral up to a maximum collateral
-            ratio of 170%.
+            To mint (borrow) GREEN, you are required to deposit a specific amount of collateral
+            using the Ascend platform, or have a pre-existing balance of ETH or stETH within the
+            Ascend Protocol. You can then generate GREEN against your collateral up to a maximum
+            collateral ratio of 170%.
           </p>
         </div>
 
@@ -375,6 +410,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                   </p>
                 </div>
               </div>
+
               {/* {showVaults && (
                 <div className="absolute z-30 bg-secondaryColor top-[90px] left-0 w-full border rounded-2xl border-[#647594]">
                   {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
@@ -439,7 +475,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               </p>
             </div>
 
-            <div className={`${!isDepositValid ? 'border-[#FF5710]' : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
+            <div
+              className={`${!isDepositValid ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+            >
               <input
                 type="number"
                 placeholder={`1.000 ${activeVault.token.symbol}`}
@@ -456,7 +494,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             </div>
 
             {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
-
           </div>
 
           <div
@@ -498,8 +535,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                 <div className="bg-secondaryColor outline-none  rounded-2xl w-[130px] sm:w-[150px] flex justify-center items-center text-white text-center">
                   <input
                     type="number"
-                    value={collateralRatio}
-                    disabled={isDebtRatioAuto}
+                    value={isDebtRatioAuto ? formatUnits(collateralRatio, 18) : "0"}
+                    disabled={!isDebtRatioAuto}
                     onChange={handleCollateralRatioChange}
                     className="bg-transparent outline-none  w-[80px] py-2 px-6 text-white text-center"
                   />
@@ -511,19 +548,27 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             <div>
               <p>Mint</p>
 
-              <div className={`${isMintValid ? "border-transparent" : 'border-[#FF5710]'} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
+              <div
+                className={`${isMintValid ? "border-transparent" : "border-[#FF5710]"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+              >
                 <input
                   type="number"
-                  placeholder="1.000 weETH"
+                  placeholder="1.000 GREEN"
                   value={mintAmount}
+                  disabled={isDebtRatioAuto}
                   onChange={handleMintInputChange}
-                  className="placeholder:text-lightGray bg-transparent outline-none border-none font-medium text-[14px] sm:text-[18px] leading-[36px] w-[130px] sm:w-auto"
+                  className="placeholder:text-lightGray bg-transparent outline-none border-none font-medium text-[14px] sm:text-[18px] leading-[36px] w-[130px] sm:w-auto flex-grow"
                 />
-                <div className="flex items-center gap-28 font-medium text-[14px] leading-[28px]">
-                  <button type="button" onClick={setMintToMax} className="font-bold text-lightGray">
+                {/* <div className="flex items-center gap-28 font-medium text-[14px] leading-[28px]">
+                  <button
+                    type="button"
+                    disabled={isDebtRatioAuto}
+                    onClick={setMintToMax}
+                    className="font-bold text-lightGray"
+                  >
                     Max
                   </button>
-                </div>
+                </div> */}
               </div>
               {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
@@ -555,12 +600,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
           <div className="flex items-center justify-between gap-2">
             <p>Debt in front</p>
-            <p>0.0 BLUE</p>
+            <p>0.0 GREEN</p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <p>Collateral Ratio</p>
-            <p className="text-primaryColor">130%</p>
+            <p className="text-primaryColor">
+              {formatDecimals(parseFloat(formatUnits(collateralRatio, 18)), 2)}%
+            </p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
@@ -569,7 +616,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
           </div>
 
           <div className="flex items-center justify-between gap-2">
-            <p>Remaining Mintable BLUE</p>
+            <p>Remaining Mintable GREEN</p>
             <p>93,999,999.00</p>
           </div>
         </div>
