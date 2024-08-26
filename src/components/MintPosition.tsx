@@ -35,7 +35,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const dispatch = useDispatch();
   const [mintAmount, setMintAmount] = useState<string>("");
   const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
-  const [isMintValid, setIsMintValid] = useState<boolean>(true);
+  const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -172,6 +172,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       if (mintAmount === "") {
         // Empty string case
         setMintError("");
+        setIsMintValid(false);
       } else if (amount > 0 && amount <= maxMintableAmount) {
         setIsMintValid(true);
         setMintError("");
@@ -239,7 +240,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       <div className="flex flex-col gap-2">
         <p className="font-medium text-[12px] leading-[24px]">Mint GREEN</p>
         <div
-          className={`${isMintValid ? "border-transparent" : "border-[#FF5710]"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+          className={`${minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
         >
           <input
             type="number"

@@ -35,7 +35,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const [depositAmount, setDepositAmount] = useState<string>("");
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
-  const [isDepositValid, setIsDepositValid] = useState<boolean>(true);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [depositerror, setDepositError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -294,7 +294,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
         </div>
 
         <div
-          className={`${!isDepositValid ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+          className={`${depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
         >
           <input
             type="number"
