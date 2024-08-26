@@ -11,17 +11,11 @@ import PositionCard from "@/components/PositionCard";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
 import useTroveManager from "@/hooks/useTroveManager";
+import type { PositionStatsType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
 import { formatDecimals } from "@/utils/formatters";
 
 import postionsIcon from "../../../public/icons/positionsIcon.svg";
-
-interface PositionStatsType {
-  id: Address;
-  collateral: string;
-  debt: string;
-  collateralRatio: string;
-}
 
 const Page = () => {
   const router = useRouter();

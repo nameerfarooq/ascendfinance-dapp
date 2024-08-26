@@ -16,7 +16,6 @@ import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
 
-
 interface MintPositionProps {
   activeVault: VaultType | undefined;
 }
@@ -33,8 +32,8 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { withdrawDebt } = useBorrowerOperations();
-  const dispatch = useDispatch()
-  const [mintAmount, setMintAmount] = useState<string>("0");
+  const dispatch = useDispatch();
+  const [mintAmount, setMintAmount] = useState<string>("");
   const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
   const [isMintValid, setIsMintValid] = useState<boolean>(true);
   const [minterror, setMintError] = useState<string>("");
@@ -61,12 +60,20 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   ) => {
     try {
       if (activeVault) {
-
-        dispatch(setLoader({ condition: "loading", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Minting",
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
       }
       if (address && activeVault) {
         // Step#1
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+          troveManagerAddress,
+          address,
+        );
         console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // Step#2
@@ -118,15 +125,19 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
         );
         console.log("tx: ", tx);
 
-        setMintAmount("0")
+        setMintAmount("");
       }
     } catch (error) {
       if (activeVault) {
-        dispatch(setLoader({ condition: "failed", text1: 'Minting', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "failed",
+            text1: "Minting",
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
       }
-
     }
-
   };
 
   const handleCtaFunctions = () => {
@@ -155,16 +166,24 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   };
 
   const validateMint = () => {
-    const amount = parseFloat(mintAmount);
-    if (activeVault && amount > 0 && amount <= parseFloat(formatUnits(maxMintableAmount, 18))) {
-      setIsMintValid(true)
-      setMintError("")
-    } else if (mintAmount < "0") {
-      setIsMintValid(false)
-      setMintError("Desired mint value must be greater than 0")
+    if (activeVault) {
+      const amount = parseUnits(mintAmount, 18);
+
+      if (mintAmount === "") {
+        // Empty string case
+        setMintError("");
+      } else if (amount > 0 && amount <= maxMintableAmount) {
+        setIsMintValid(true);
+        setMintError("");
+      } else if (amount > 0 && amount > maxMintableAmount) {
+        setIsMintValid(false);
+        setMintError("Desired mint value is greater than tokens available for mint");
+      } else if (amount <= 0) {
+        setIsMintValid(false);
+        setMintError("Desired mint value must be greater than 0");
+      }
     } else {
-      setIsMintValid(false)
-      setMintError("Desired mint value is greater than tokens available for mint")
+      setIsMintValid(false);
     }
   };
 
@@ -203,10 +222,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   };
 
   useEffect(() => {
-    if (debouncedMintAmount > "0" || debouncedMintAmount < "0") {
-
-      validateMint();
-    }
+    validateMint();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount]);
 
@@ -222,7 +238,9 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     <div className="flex flex-col gap-12 pt-12">
       <div className="flex flex-col gap-2">
         <p className="font-medium text-[12px] leading-[24px]">Mint GREEN</p>
-        <div className={`${isMintValid ? "border-transparent" : 'border-[#FF5710]'} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
+        <div
+          className={`${isMintValid ? "border-transparent" : "border-[#FF5710]"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+        >
           <input
             type="number"
             placeholder="1.00 GREEN"
@@ -237,7 +255,6 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
           </div>
         </div>
         {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
-
       </div>
 
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">

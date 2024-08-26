@@ -367,6 +367,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain"
           />
         </div>
+        
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
             <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />

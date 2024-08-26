@@ -66,4 +66,11 @@ interface ContractAddressObjectType {
   };
 }
 
-export type { Token, VaultType, VaultsListType, ContractAddressObjectType };
+interface PositionStatsType {
+  id: Address;
+  collateral: string;
+  debt: string;
+  collateralRatio: string;
+}
+
+export type { Token, VaultType, VaultsListType, ContractAddressObjectType, PositionStatsType };

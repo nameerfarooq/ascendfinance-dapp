@@ -32,7 +32,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const { addColl } = useBorrowerOperations();
 
   const [zap, setZap] = useState<0 | 1 | 2>(0);
-  const [depositAmount, setDepositAmount] = useState<string>("0");
+  const [depositAmount, setDepositAmount] = useState<string>("");
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(true);
@@ -40,7 +40,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
       balanceOf(tokenAddress, walletAddress).then((balance) => {
@@ -98,15 +98,23 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     amount: bigint,
   ) => {
     try {
-
       if (address && activeVault) {
-        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Depositing",
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
         // Step#1
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
         console.log("sharesAmount: ", sharesAmount);
 
         // Step#2
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+          troveManagerAddress,
+          address,
+        );
         console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // Step#3
@@ -161,17 +169,19 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
         // Step#9
         fetchTokenbalance(activeVault.token.address, address);
 
-        setDepositAmount("0")
+        setDepositAmount("");
       }
-
     } catch (error) {
       if (activeVault) {
-
-        dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault?.token.decimals)} ${activeVault?.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "failed",
+            text1: "Depositing",
+            text2: `${formatUnits(amount, activeVault?.token.decimals)} ${activeVault?.token.symbol}`,
+          }),
+        );
       }
-
     }
-
   };
 
   const handleCtaFunctions = () => {
@@ -208,29 +218,29 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   };
 
   const validateDeposit = () => {
-    const amount = parseFloat(depositAmount);
-    if (
-      activeVault &&
-      amount > 0 &&
-      amount <= parseFloat(formatUnits(tokenBalance, activeVault.token.decimals))
-    ) {
-      setIsDepositValid(true);
-      setDepositError("")
-    } else if (amount < 0) {
-      setIsDepositValid(false);
-      setDepositError("Deposit amount must be greater than 0")
-    } else {
-      setIsDepositValid(false);
-      setDepositError("Deposit amount is greater than token balance")
+    let amount = 0n;
+
+    if (activeVault) {
+      amount = parseUnits(depositAmount, activeVault?.token.decimals);
     }
 
+    if (depositAmount === "") {
+      setDepositError("");
+    } else if (amount > 0 && amount <= tokenBalance) {
+      setIsDepositValid(true);
+      setDepositError("");
+    } else if (amount > 0 && amount > tokenBalance) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount is greater than token balance");
+    } else if (amount <= 0) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount must be greater than 0");
+    }
   };
 
   useEffect(() => {
-    if (debouncedDepositAmount > "0" || debouncedDepositAmount < "0") {
+    validateDeposit();
 
-      validateDeposit();
-    }
     if (address && chain && activeVault) {
       const borrowerOperationsAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
@@ -283,7 +293,9 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
           </div>
         </div>
 
-        <div className={`${!isDepositValid ? 'border-[#FF5710]' : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
+        <div
+          className={`${!isDepositValid ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+        >
           <input
             type="number"
             placeholder={`1.000 ${activeVault?.token.symbol}`}
@@ -298,7 +310,6 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
           </div>
         </div>
         {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
-
       </div>
 
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
