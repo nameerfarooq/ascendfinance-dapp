@@ -24,7 +24,7 @@ interface DepositPositionProps {
 }
 
 const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
-  const { isPaused } = useAppSelector((state) => state.protocol.global);
+  const { isPaused } = useAppSelector((state) => state.protocol.protocol);
 
   const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();

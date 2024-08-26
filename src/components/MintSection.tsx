@@ -34,7 +34,7 @@ interface MintSectionProps {
 const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { isConnected, chain, address } = useAccount();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
-  const { isPaused } = useAppSelector((state) => state.protocol.global);
+  const { isPaused } = useAppSelector((state) => state.protocol.protocol);
 
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
