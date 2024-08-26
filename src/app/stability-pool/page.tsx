@@ -16,6 +16,7 @@ const Page = () => {
     const [depositAmount, setdepositAmount] = useState("0");
     const [depositerror, setDepositerror] = useState("");
     const setDepositToMax = () => { };
+    // 
     return (
         <div className="flex items-center justify-center min-h-full w-full">
             <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[10px]  lg:w-[70%]  xl:w-[68%] 2xl:w-[55%] ">
