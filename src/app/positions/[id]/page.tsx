@@ -4,15 +4,19 @@ import React, { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { formatUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import DepositPosition from "@/components/DepositPosition";
 import MintPosition from "@/components/MintPosition";
 import RepayPosition from "@/components/RepayPosition";
 import WithdrawPosition from "@/components/WithdrawPosition";
+import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
-import type { VaultType } from "@/types";
+import useTroveManager from "@/hooks/useTroveManager";
+import type { PositionStatsType, VaultType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
+import { formatDecimals } from "@/utils/formatters";
 
 import gearIcon from "../../../../public/icons/gearIcon.svg";
 import goBackIcon from "../../../../public/icons/goBackIcon.svg";
@@ -20,19 +24,79 @@ import goBackIcon from "../../../../public/icons/goBackIcon.svg";
 const Page = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
   const { isConnected, address, chain } = useAccount();
+  const { getTroveCollSharesAndDebt, convertSharesToYieldTokens, fetchPriceInUsd, getCurrentICR } =
+    useTroveManager();
 
   const [tab, setTab] = useState(0);
   const [activeVault, setActiveVault] = useState<VaultType>();
+  const [positionStats, setPositionStats] = useState<PositionStatsType>({
+    id: params.id as Address,
+    collateral: "0",
+    debt: "0",
+    collateralRatio: "-",
+  });
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId = getDefaultChainId(chain);
+
+  const getSinglePositionStats = async (
+    vaultId: Address,
+  ): Promise<PositionStatsType | undefined | void> => {
+    try {
+      if (isConnected && address && chain?.id && vaultId) {
+        const troveManagerAddress: Address =
+          CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].troves[vaultId].TROVE_MANAGER;
+
+        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+          troveManagerAddress,
+          address,
+        );
+
+        const yieldTokens = await convertSharesToYieldTokens(
+          troveManagerAddress,
+          troveCollSharesAndDebt[0],
+        );
+
+        const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+
+        const currentICR = await getCurrentICR(troveManagerAddress, address, priceInUSD);
+
+        return {
+          id: vaultId,
+          collateral: formatDecimals(parseFloat(formatUnits(yieldTokens, 18)), 2),
+          debt: formatDecimals(parseFloat(formatUnits(troveCollSharesAndDebt[1], 18)), 2),
+          collateralRatio: formatDecimals(parseFloat(formatUnits(currentICR * 100n, 18)), 2),
+        };
+      }
+    } catch (error) {
+      console.log("Error in fetching individual positions stats: ", vaultId, "\n", error);
+    }
+  };
 
   useEffect(() => {
     if (isConnected && address && chain && params && params.id) {
       setActiveVault(nativeVaultsList[defaultChainId][params.id]);
     }
   }, [isConnected, address, chain, params, nativeVaultsList, defaultChainId]);
+
+  useEffect(() => {
+    if (isConnected && address && chain && params && params.id) {
+      getSinglePositionStats(params.id as Address).then((result) => {
+        if (result) {
+          setPositionStats(result);
+        } else {
+          setPositionStats({
+            id: params.id as Address,
+            collateral: "0",
+            debt: "0",
+            collateralRatio: "-",
+          });
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address, chain, params]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -81,11 +145,13 @@ const Page = ({ params }: { params: { id: string } }) => {
           <div className="flex flex-col gap-4 my-12 text-[12px] text-lightGray font-medium">
             <div className="flex gap-2 justify-between items-center">
               <p className="font-medium">Minted</p>
-              <p className="font-bold">0 GREEN</p>
+              <p className="font-bold">{positionStats.debt} GREEN</p>
             </div>
             <div className="flex gap-2 justify-between items-center">
               <p>Collateral Ratio</p>
-              <p className="text-primaryColor">-</p>
+              <p className="text-primaryColor">
+                {positionStats.collateralRatio}{positionStats.collateralRatio ? "%" : ""}
+              </p>
             </div>
             <div className="flex gap-2 justify-between items-center">
               <p>Liquidation Price</p>
@@ -127,7 +193,7 @@ const Page = ({ params }: { params: { id: string } }) => {
           {tab === 0 && <DepositPosition activeVault={activeVault} />}
           {tab === 1 && <MintPosition activeVault={activeVault} />}
           {tab === 2 && <WithdrawPosition activeVault={activeVault} />}
-          {tab === 3 && <RepayPosition activeVault={activeVault}/>}
+          {tab === 3 && <RepayPosition activeVault={activeVault} />}
         </div>
       </div>
     </div>

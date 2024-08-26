@@ -49,9 +49,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   );
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
-  const [isDepositValid, setIsDepositValid] = useState<boolean>(true);
+  const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [depositerror, setDepositError] = useState<string>("");
-  const [isMintValid, setIsMintValid] = useState<boolean>(true);
+  const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
   const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
@@ -367,6 +367,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             className="w-[15px] h-[15px] lg:w-[30px] lg:h-[30px] object-contain"
           />
         </div>
+
         <div className="pt-6 pb-10 px-12">
           <div className="flex items-center gap-6">
             <Image alt="Mint icon" src={mintIcon} width={30} className="brightness-0 invert" />
@@ -476,7 +477,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             </div>
 
             <div
-              className={`${!isDepositValid ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+              className={`${depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
             >
               <input
                 type="number"
@@ -549,7 +550,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               <p>Mint</p>
 
               <div
-                className={`${isMintValid ? "border-transparent" : "border-[#FF5710]"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+                className={`${minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
               >
                 <input
                   type="number"
