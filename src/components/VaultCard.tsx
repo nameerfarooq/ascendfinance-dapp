@@ -17,8 +17,9 @@ interface VaultCardProps {
   btnText: string;
   learnMoreLink: string;
   infoSymbol: string;
+  btnDisable?: boolean;
 
-  btnAction: ()=> void;
+  btnAction: () => void;
 }
 const VaultCard: React.FC<VaultCardProps> = ({
   iconImg,
@@ -31,6 +32,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
   btnText,
   learnMoreLink,
   infoSymbol,
+  btnDisable = false,
   btnAction,
 }) => {
   return (
@@ -78,7 +80,7 @@ const VaultCard: React.FC<VaultCardProps> = ({
         </div>
 
         <div className="px-12">
-          <ButtonStyle1 text={btnText} action={btnAction} disabled={false} />
+          <ButtonStyle1 text={btnText} action={btnAction} disabled={btnDisable} />
         </div>
       </div>
     </div>

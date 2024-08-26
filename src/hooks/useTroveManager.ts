@@ -25,6 +25,8 @@ export const useTroveManager = (): {
     walletAddress: Address,
     usdPrice: bigint,
   ) => Promise<bigint>;
+  vmPaused: (troveManagerAddress: Address) => Promise<boolean | undefined>;
+  sunsetting: (troveManagerAddress: Address) => Promise<boolean | undefined>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -224,6 +226,48 @@ export const useTroveManager = (): {
     [isConnected, address],
   );
 
+  const vmPaused = useCallback(
+    async (troveManagerAddress: Address): Promise<boolean | undefined> => {
+      try {
+        if (isConnected && address && publicClient) {
+          const result = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "paused",
+            args: [],
+          });
+
+          return result as boolean;
+        }
+      } catch (error) {
+        console.log("vmPaused(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
+
+  const sunsetting = useCallback(
+    async (troveManagerAddress: Address): Promise<boolean | undefined> => {
+      try {
+        if (isConnected && address && publicClient) {
+          const result = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "sunsetting",
+            args: [],
+          });
+
+          return result as boolean;
+        }
+      } catch (error) {
+        console.log("sunsetting(): ", error);
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     convertYieldTokensToShares,
     getTroveOwnersCount,
@@ -233,6 +277,8 @@ export const useTroveManager = (): {
     fetchPriceInUsd,
     MCR,
     getCurrentICR,
+    vmPaused,
+    sunsetting,
   };
 };
 

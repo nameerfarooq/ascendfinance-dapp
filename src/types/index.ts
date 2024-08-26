@@ -35,7 +35,7 @@ interface ContractAddressObjectType {
       FACTORY: Address;
       LIQUIDATION_MANAGER: Address;
       PRICE_FEED: Address;
-      PRISMA_CORE: Address;
+      ASCEND_CORE: Address;
       STABILITY_POOL: Address;
       MULTI_COLLATERAL_HINT_HELPERS: Address;
       troves: {
@@ -53,7 +53,7 @@ interface ContractAddressObjectType {
       FACTORY: Address;
       LIQUIDATION_MANAGER: Address;
       PRICE_FEED: Address;
-      PRISMA_CORE: Address;
+      ASCEND_CORE: Address;
       STABILITY_POOL: Address;
       MULTI_COLLATERAL_HINT_HELPERS: Address;
       troves: {
