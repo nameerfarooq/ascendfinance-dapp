@@ -247,6 +247,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
     if (depositAmount === "") {
       setDepositError("");
+      setIsDepositValid(false);
     } else if (amount > 0 && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
@@ -275,6 +276,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
       if (mintAmount === "") {
         setMintError("");
+        setIsMintValid(false);
       } else if (amount > 0 && amount <= maxMintAmount) {
         setIsMintValid(true);
         setMintError("");

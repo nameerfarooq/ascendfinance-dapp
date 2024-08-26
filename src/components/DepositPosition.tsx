@@ -226,6 +226,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
 
     if (depositAmount === "") {
       setDepositError("");
+      setIsDepositValid(false);
     } else if (amount > 0 && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
