@@ -14,6 +14,8 @@ import WithdrawPosition from "@/components/WithdrawPosition";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setActiveVault } from "@/lib/features/vault/vaultSlice";
+import { useAppDispatch } from "@/lib/hooks";
 import type { PositionStatsType, VaultType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
 import { formatDecimals } from "@/utils/formatters";
@@ -23,12 +25,13 @@ import goBackIcon from "../../../../public/icons/goBackIcon.svg";
 
 const Page = ({ params }: { params: { id: string } }) => {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { isConnected, address, chain } = useAccount();
   const { getTroveCollSharesAndDebt, convertSharesToYieldTokens, fetchPriceInUsd, getCurrentICR } =
     useTroveManager();
 
   const [tab, setTab] = useState(0);
-  const [activeVault, setActiveVault] = useState<VaultType>();
+  const [activeVault, setActiveVaultState] = useState<VaultType>();
   const [positionStats, setPositionStats] = useState<PositionStatsType>({
     id: params.id as Address,
     collateral: "0",
@@ -76,8 +79,10 @@ const Page = ({ params }: { params: { id: string } }) => {
 
   useEffect(() => {
     if (isConnected && address && chain && params && params.id) {
-      setActiveVault(nativeVaultsList[defaultChainId][params.id]);
+      setActiveVaultState(nativeVaultsList[defaultChainId][params.id]);
+      dispatch(setActiveVault(nativeVaultsList[defaultChainId][params.id]));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, chain, params, nativeVaultsList, defaultChainId]);
 
   useEffect(() => {
@@ -150,7 +155,8 @@ const Page = ({ params }: { params: { id: string } }) => {
             <div className="flex gap-2 justify-between items-center">
               <p>Collateral Ratio</p>
               <p className="text-primaryColor">
-                {positionStats.collateralRatio}{positionStats.collateralRatio ? "%" : ""}
+                {positionStats.collateralRatio}
+                {positionStats.collateralRatio ? "%" : ""}
               </p>
             </div>
             <div className="flex gap-2 justify-between items-center">

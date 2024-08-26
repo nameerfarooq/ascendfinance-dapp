@@ -14,6 +14,7 @@ import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
+import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
 
 interface MintPositionProps {
@@ -21,6 +22,8 @@ interface MintPositionProps {
 }
 
 const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
+  const { isPaused } = useAppSelector((state) => state.protocol.protocol);
+
   const { isConnected, chain, address } = useAccount();
   const {
     getTroveOwnersCount,
@@ -166,6 +169,12 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   };
 
   const validateMint = () => {
+    if (isPaused) {
+      setIsMintValid(false);
+      console.log("Protocol is paused.");
+      return;
+    }
+
     if (activeVault) {
       const amount = parseUnits(mintAmount, 18);
 

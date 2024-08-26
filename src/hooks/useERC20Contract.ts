@@ -1,7 +1,13 @@
 import { useCallback } from "react";
 
 import { useDispatch } from "react-redux";
-import { createWalletClient, custom, formatUnits, type Address, type TransactionReceipt } from "viem";
+import {
+  createWalletClient,
+  custom,
+  formatUnits,
+  type Address,
+  type TransactionReceipt,
+} from "viem";
 import { readContract, waitForTransactionReceipt, writeContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
@@ -52,7 +58,6 @@ const publicClient = wagmiConfig.getClient();
 // };
 
 export const useERC20Contract = (): {
-
   balanceOf: (tokenAddress: Address, walletAddress: Address) => Promise<bigint>;
   allowance: (
     tokenAddress: Address,
@@ -66,7 +71,7 @@ export const useERC20Contract = (): {
   ) => Promise<TransactionReceipt | void>;
 } => {
   const { isConnected, address } = useAccount();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
 
   const balanceOf = useCallback(
@@ -129,10 +134,10 @@ export const useERC20Contract = (): {
       try {
         dispatch(
           setLoader({
-            condition: 'loading',
-            text1: 'Approval pending',
+            condition: "loading",
+            text1: "Approval pending",
             text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
-          })
+          }),
         );
         if (isConnected && address && tokenAddress && spenderAddress && amount && publicClient) {
           const walletClient = createWalletClient({
@@ -148,23 +153,26 @@ export const useERC20Contract = (): {
             args: [spenderAddress, amount],
           });
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
-          if (tx?.status === "success") {
+          console.log("hash: ", hash);
 
+          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          console.log("tx: ", tx);
+
+          if (tx?.status === "success") {
             dispatch(
               setLoader({
-                condition: 'success',
-                text1: 'Approval granted',
+                condition: "success",
+                text1: "Approval granted",
                 text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
-              })
+              }),
             );
           } else {
             dispatch(
               setLoader({
-                condition: 'failed',
-                text1: 'Approval rejected',
+                condition: "failed",
+                text1: "Approval rejected",
                 text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
-              })
+              }),
             );
           }
           return tx;
@@ -173,10 +181,10 @@ export const useERC20Contract = (): {
         console.log("approve(): ", error);
         dispatch(
           setLoader({
-            condition: 'failed',
-            text1: 'Approval rejected',
+            condition: "failed",
+            text1: "Approval rejected",
             text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
-          })
+          }),
         );
         // const keys = Object.keys(error);
 

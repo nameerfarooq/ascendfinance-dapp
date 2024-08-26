@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import loaderSlice from "@/lib/features/loader/loaderSlice";
+import protocolSlice from "@/lib/features/protocol/protocolSlice";
 import vaultSlice from "@/lib/features/vault/vaultSlice";
 
 export const makeStore = () => {
@@ -8,6 +9,7 @@ export const makeStore = () => {
     reducer: {
       loader: loaderSlice,
       vault: vaultSlice,
+      protocol: protocolSlice,
     },
   });
 };

@@ -21,13 +21,8 @@ import vaultsIcon from "../../public/icons/vaultsIcon.svg";
 
 const VaultsPage = () => {
   const router = useRouter();
-  const [showMintSection, setShowMintSection] = useState(false)
-  
-  const handleShowMintSection = () => {
-    setShowMintSection(!showMintSection);
-  };
-  const { isConnected, address, chain } = useAccount();
   const dispatch = useAppDispatch();
+  const { isConnected, address, chain } = useAccount();
   const { getTroveStatus } = useTroveManager();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -35,6 +30,12 @@ const VaultsPage = () => {
   const defaultChainId = getDefaultChainId(chain);
 
   const [vaultStatusList, setVaultStatusList] = useState<{ [x: string]: bigint }>({});
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showMintSection, setShowMintSection] = useState(false);
+
+  const handleShowMintSection = () => {
+    setShowMintSection(!showMintSection);
+  };
 
   const setActiveVaultFunc = (vault: VaultType) => {
     dispatch(setActiveVault(vault));
@@ -52,7 +53,7 @@ const VaultsPage = () => {
       const vaultIds = Object.keys(nativeVaultsList[chain?.id]);
       let vaultStatusObj = {};
 
-      vaultIds.map(async (vaultId) => {
+      vaultIds.map(async (vaultId, index) => {
         const troveManagerAddress: Address =
           CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[vaultId as Address]
             .TROVE_MANAGER;
@@ -60,6 +61,10 @@ const VaultsPage = () => {
         await getTroveStatus(troveManagerAddress, address).then((status) => {
           vaultStatusObj = { ...vaultStatusObj, [vaultId]: status };
           setVaultStatusList(vaultStatusObj);
+
+          if (index === vaultIds.length - 1) {
+            setLoading(false);
+          }
         });
       });
     }
@@ -101,6 +106,7 @@ const VaultsPage = () => {
                 }
                 learnMoreLink={"/"}
                 infoSymbol={nativeVaultsList[defaultChainId][vaultId].name}
+                btnDisable={loading}
                 btnAction={
                   vaultStatusList[vaultId] === 1n
                     ? () => managePosition(vaultId)

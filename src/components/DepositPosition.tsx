@@ -16,6 +16,7 @@ import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
+import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
 
 interface DepositPositionProps {
@@ -23,6 +24,8 @@ interface DepositPositionProps {
 }
 
 const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
+  const { isPaused } = useAppSelector((state) => state.protocol.global);
+
   const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, getTroveCollSharesAndDebt } =
@@ -218,6 +221,12 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   };
 
   const validateDeposit = () => {
+    if (isPaused) {
+      setIsDepositValid(false);
+      console.log("Protocol is paused.");
+      return;
+    }
+
     let amount = 0n;
 
     if (activeVault) {

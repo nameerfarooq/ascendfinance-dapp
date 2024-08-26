@@ -33,8 +33,9 @@ interface MintSectionProps {
 }
 const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { isConnected, chain, address } = useAccount();
-  // const router = useRouter();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const { isPaused } = useAppSelector((state) => state.protocol.global);
+
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
@@ -258,6 +259,12 @@ const dispatch = useDispatch()
   };
 
   const validateDeposit = () => {
+    if (isPaused) {
+      setIsDepositValid(false);
+      console.log("Protocol is paused.");
+      return;
+    }
+
     const amount = parseUnits(depositAmount, activeVault.token.decimals);
 
     if (depositAmount === "") {
@@ -277,6 +284,12 @@ const dispatch = useDispatch()
 
   const validateMint = () => {
     try {
+      if (isPaused) {
+        setIsMintValid(false);
+        console.log("Protocol is paused.");
+        return;
+      }
+
       let maxMintAmount = 0n;
 
       if (collateralRatio > 0) {
