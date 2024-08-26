@@ -32,7 +32,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     const { withdrawColl } = useBorrowerOperations();
     const [withdrawAmount, setwithdrawAmount] = useState("");
     const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
-    const [isValidated, setIsValidated] = useState(true)
+    const [isValidated, setIsValidated] = useState(false)
     const [error, setError] = useState("")
     const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n)
     const dispatch = useDispatch()
@@ -161,15 +161,13 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     };
     useEffect(() => {
         const getValidate = async () => {
-            if (address && chain && activeVault) {
+            if (address && chain && activeVault && withdrawAmount) {
 
                 console.log("debouncedwithdrawAmount: ", debouncedwithdrawAmount);
                 const withDrawAmount = parseUnits(debouncedwithdrawAmount, activeVault.token.decimals);
-                if (withDrawAmount < 0n) {
+                if (withDrawAmount <= 0n) {
                     setIsValidated(false)
                     setError("Your desired withdraw amount is should be greater than 0")
-
-
                 }
                 else if (withDrawAmount > alreadyDepositedTokens) {
                     setIsValidated(false)
@@ -202,7 +200,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         <div className="flex flex-col gap-8 pt-12">
             <div className="flex flex-col gap-2">
                 <p className="font-medium text-[12px] leading-[24px]">Withdraw weETH</p>
-                <div className={`${!isValidated && 'border-[#FF5710]'} border-transparent border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
+                <div className={`${error ? 'border-[#FF5710]':"border-transparent"}  border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
                     <input
                         value={withdrawAmount}
                         onChange={handleWithdrawInputChange}

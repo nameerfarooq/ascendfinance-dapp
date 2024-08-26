@@ -5,6 +5,7 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import Image from "next/image";
 // import { useRouter } from "next/navigation";
 // import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -21,6 +22,7 @@ import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
 import { formatDecimals } from "@/utils/formatters";
 
@@ -38,7 +40,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
-
+const dispatch = useDispatch()
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
@@ -150,7 +152,11 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     try {
       if (address) {
+        
+        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
         // Step#1
+
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
         console.log("sharesAmount: ", sharesAmount);
 
@@ -200,12 +206,21 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
           insertPosition[1],
         );
         console.log("tx: ", tx);
+        if(tx?.status === "success"){
+          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+        }else{
+          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
+        }
 
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
       }
     } catch (error: any) {
       console.log("Error in Minting:", error.message);
+      dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+
     }
   };
 
@@ -472,7 +487,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               <p className="font-medium text-[12px] leading-[24px]">
                 Wallet:{" "}
                 <span className="font-extrabold">
-                  {formatUnits(tokenBalance, activeVault.token.decimals)}
+                  {formatDecimals(Number(formatUnits(tokenBalance, activeVault.token.decimals)),2)}
                 </span>{" "}
                 {activeVault.token.symbol}
               </p>
