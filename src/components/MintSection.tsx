@@ -487,7 +487,7 @@ const dispatch = useDispatch()
               <p className="font-medium text-[12px] leading-[24px]">
                 Wallet:{" "}
                 <span className="font-extrabold">
-                  {formatUnits(tokenBalance, activeVault.token.decimals)}
+                  {formatDecimals(Number(formatUnits(tokenBalance, activeVault.token.decimals)),2)}
                 </span>{" "}
                 {activeVault.token.symbol}
               </p>

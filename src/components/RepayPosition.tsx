@@ -16,6 +16,7 @@ import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
+import { formatDecimals } from "@/utils/formatters";
 
 
 interface RepayPositionProps {
@@ -29,12 +30,12 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const { findInsertPosition } = useSortedTroves();
     const { repayDebt, closeTrove } = useBorrowerOperations();
     const dispatch = useDispatch()
-    const [repayAmount, setRepayAmount] = useState<string>("0");
+    const [repayAmount, setRepayAmount] = useState<string>("");
     const router = useRouter()
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 
     const debouncedRepayAmount = useDebounce(repayAmount, 350);
-    const [isValidated, setIsValidated] = useState(true);
+    const [isValidated, setIsValidated] = useState(false);
     const [alreadyMintedDebt, setAlreadyMintedDebt] = useState(0n);
     const [error, setError] = useState("");
     const [warning, setWarning] = useState("");
@@ -203,11 +204,13 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
 
     useEffect(() => {
         const getValidate = async () => {
-            if (address && chain && activeVault && debouncedRepayAmount !== "0") {
+            if (address && chain && activeVault && repayAmount) {
                 const repayAmountLocal = parseUnits(debouncedRepayAmount, activeVault.token.decimals);
-                if (repayAmountLocal < 0n) {
+                if (repayAmountLocal <= 0n) {
                     setIsValidated(false);
                     setError("Your desired Repay amount should be greater than 0");
+                    setWarning("");
+
                 } else if (repayAmountLocal > alreadyMintedDebt) {
                     setIsValidated(false);
                     setError("Your desired Repay amount is greater than Minted token");
@@ -237,7 +240,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             <div className="flex flex-col gap-2">
                 <p className="font-medium text-[12px] leading-[24px]">Repay GREEN</p>
                 <div
-                    className={`${!isValidated ? "border-[#FF5710]" : warning ? "border-[#ffd025]" : "border-transparent"}  border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+                    className={`${error ? "border-[#FF5710]" : warning ? "border-[#ffd025]" : "border-transparent"}  border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
                 >
                     <input
                         value={repayAmount}
@@ -268,7 +271,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
                 </div>
             </div>
             <div>
-                <ButtonStyle1 disabled={!isValidated || repayAmount === "0"} action={handleCtaFunctions} text="Repay" />
+                <ButtonStyle1 disabled={!isValidated} action={handleCtaFunctions} text="Repay" />
             </div>
         </div>
     );
