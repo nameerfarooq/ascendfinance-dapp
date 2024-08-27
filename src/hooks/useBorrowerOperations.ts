@@ -10,7 +10,12 @@ import {
   type Address,
   type TransactionReceipt,
 } from "viem";
-import { waitForTransactionReceipt, writeContract } from "viem/actions";
+import {
+  readContract,
+  writeContract,
+  simulateContract,
+  waitForTransactionReceipt,
+} from "viem/actions";
 import { useAccount } from "wagmi";
 
 import BorrowerOperations_ABI from "@/abis/BorrowerOperations.json";
@@ -70,6 +75,12 @@ export const useBorrowerOperations = (): {
     upperHint: Address,
     lowerHint: Address,
   ) => Promise<TransactionReceipt | void>;
+  minNetDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  CCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  getTCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  getGlobalSystemBalances: (
+    borrowerOperationsAddress: Address,
+  ) => Promise<{ totalPricedCollateral: bigint; totalDebt: bigint }>;
 } => {
   const { isConnected, address } = useAccount();
   const dispatch = useDispatch();
@@ -166,6 +177,7 @@ export const useBorrowerOperations = (): {
     },
     [isConnected, address],
   );
+
   const closeTrove = useCallback(
     async (
       borrowerOperationsAddress: Address,
@@ -295,6 +307,7 @@ export const useBorrowerOperations = (): {
     },
     [isConnected, address],
   );
+
   const withdrawColl = useCallback(
     async (
       borrowerOperationsAddress: Address,
@@ -373,6 +386,7 @@ export const useBorrowerOperations = (): {
     },
     [isConnected, address],
   );
+
   const repayDebt = useCallback(
     async (
       borrowerOperationsAddress: Address,
@@ -540,6 +554,112 @@ export const useBorrowerOperations = (): {
     [isConnected, address],
   );
 
+  const minNetDebt = useCallback(
+    async (borrowerOperationsAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && borrowerOperationsAddress) {
+          const result = await readContract(publicClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "minNetDebt",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("minNetDebt(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const CCR = useCallback(
+    async (borrowerOperationsAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && borrowerOperationsAddress) {
+          const result = await readContract(publicClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "CCR",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("CCR(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const getTCR = useCallback(
+    async (borrowerOperationsAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && borrowerOperationsAddress) {
+          const { result } = await simulateContract(publicClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "getTCR",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("getTCR(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const getGlobalSystemBalances = useCallback(
+    async (
+      borrowerOperationsAddress: Address,
+    ): Promise<{ totalPricedCollateral: bigint; totalDebt: bigint }> => {
+      const defaultValue = { totalPricedCollateral: 0n, totalDebt: 0n };
+
+      try {
+        if (isConnected && address && publicClient && borrowerOperationsAddress) {
+          const { result } = await simulateContract(publicClient, {
+            abi: BorrowerOperations_ABI.abi,
+            account: address,
+            address: borrowerOperationsAddress,
+            functionName: "getGlobalSystemBalances",
+            args: [],
+          });
+
+          return result as { totalPricedCollateral: bigint; totalDebt: bigint };
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("getGlobalSystemBalances(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     openTrove,
     closeTrove,
@@ -547,6 +667,10 @@ export const useBorrowerOperations = (): {
     withdrawColl,
     withdrawDebt,
     repayDebt,
+    minNetDebt,
+    CCR,
+    getTCR,
+    getGlobalSystemBalances,
   };
 };
 

@@ -27,6 +27,9 @@ export const useTroveManager = (): {
   ) => Promise<bigint>;
   vmPaused: (troveManagerAddress: Address) => Promise<boolean | undefined>;
   sunsetting: (troveManagerAddress: Address) => Promise<boolean | undefined>;
+  maxSystemDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  defaultedDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  getTotalActiveDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
 } => {
   const { isConnected, address } = useAccount();
 
@@ -268,6 +271,84 @@ export const useTroveManager = (): {
     [isConnected, address],
   );
 
+  const maxSystemDebt = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const result = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "maxSystemDebt",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("maxSystemDebt(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const defaultedDebt = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const result = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "defaultedDebt",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("defaultedDebt(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
+  const getTotalActiveDebt = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      const defaultValue = 0n;
+
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const result = await readContract(publicClient, {
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "getTotalActiveDebt",
+            args: [],
+          });
+
+          return result as bigint;
+        } else {
+          return defaultValue;
+        }
+      } catch (error) {
+        console.log("getTotalActiveDebt(): ", error);
+        return defaultValue;
+      }
+    },
+    [isConnected, address],
+  );
+
   return {
     convertYieldTokensToShares,
     getTroveOwnersCount,
@@ -279,6 +360,9 @@ export const useTroveManager = (): {
     getCurrentICR,
     vmPaused,
     sunsetting,
+    maxSystemDebt,
+    defaultedDebt,
+    getTotalActiveDebt,
   };
 };
 
