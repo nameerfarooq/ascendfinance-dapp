@@ -12,7 +12,7 @@ interface ProtocolState {
 }
 
 // Define the initial state using that type
-const initialState = {
+const initialState: ProtocolState = {
   protocol: {
     isPaused: false,
   },
@@ -28,9 +28,6 @@ export const protocolSlice = createSlice({
   initialState,
   reducers: {
     // Use the PayloadAction type to declare the contents of `action.payload`
-    setProtocol: (state, action: PayloadAction<ProtocolState>) => {
-      state = action.payload;
-    },
     setIsPaused: (state, action: PayloadAction<boolean>) => {
       state.protocol.isPaused = action.payload;
     },
@@ -43,6 +40,6 @@ export const protocolSlice = createSlice({
   },
 });
 
-export const { setProtocol, setIsPaused, setIsVmPaused, setIsSunSetting } = protocolSlice.actions;
+export const { setIsPaused, setIsVmPaused, setIsSunSetting } = protocolSlice.actions;
 
 export default protocolSlice.reducer;

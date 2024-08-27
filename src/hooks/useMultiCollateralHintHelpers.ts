@@ -91,7 +91,7 @@ export const useMultiCollateralHintHelpers = (): {
         } else {
           return ["0x", 0n];
         }
-      } catch (error: any) {
+      } catch (error) {
         console.log("getApproxHint(): ", error);
         return ["0x", 0n];
       }

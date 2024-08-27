@@ -218,8 +218,7 @@ const dispatch = useDispatch()
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
       }
-    } catch (error: any) {
-      console.log("Error in Minting:", error.message);
+    } catch (error) {
       dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
 
     }

@@ -16,7 +16,6 @@ import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import type { VaultType } from "@/types";
-import { formatDecimals } from "@/utils/formatters";
 
 
 interface RepayPositionProps {
@@ -200,6 +199,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             }
         };
         getAlreadyMintedDebt();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [address, chain, activeVault]);
 
     useEffect(() => {
@@ -233,6 +233,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             }
         };
         getValidate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedRepayAmount, address, activeVault]);
 
     return (
