@@ -6,17 +6,17 @@ import "@rainbow-me/rainbowkit/styles.css";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Image from "next/image";
 import { GiHamburgerMenu } from "react-icons/gi";
-import type { Address } from "viem";
-import { useAccount } from "wagmi";
+// import type { Address } from "viem";
+// import { useAccount } from "wagmi";
 
 import "@/styles/globals.scss";
 import Sidebar from "@/components/Sidebar";
-import { CONTRACT_ADDRESSES } from "@/constants/contracts";
-import useAscendCore from "@/hooks/useAscendCore";
-import useTroveManager from "@/hooks/useTroveManager";
-import { setIsPaused, setIsSunSetting, setIsVmPaused } from "@/lib/features/protocol/protocolSlice";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getDefaultChainId } from "@/utils/chain";
+// import { CONTRACT_ADDRESSES } from "@/constants/contracts";
+// import useAscendCore from "@/hooks/useAscendCore";
+// import useTroveManager from "@/hooks/useTroveManager";
+// import { setIsPaused, setIsSunSetting, setIsVmPaused } from "@/lib/features/protocol/protocolSlice";
+// import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+// import { getDefaultChainId } from "@/utils/chain";
 
 import ascendLogo from "../../public/img/ascendLogo.svg";
 
@@ -24,15 +24,15 @@ interface CustomLayoutProps {
   children: ReactNode;
 }
 const CustomLayout: React.FC<CustomLayoutProps> = ({ children }) => {
-  const activeVault = useAppSelector((state) => state.vault.activeVault);
+  // const activeVault = useAppSelector((state) => state.vault.activeVault);
 
-  const { isConnected, chain, address } = useAccount();
-  const { paused } = useAscendCore();
-  const { vmPaused, sunsetting } = useTroveManager();
-  const dispatch = useAppDispatch();
+  // const { isConnected, chain, address } = useAccount();
+  // const { paused } = useAscendCore();
+  // const { vmPaused, sunsetting } = useTroveManager();
+  // const dispatch = useAppDispatch();
 
-  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const defaultChainId = getDefaultChainId(chain);
+  // const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+  // const defaultChainId = getDefaultChainId(chain);
 
   const [showSideBar, setShowSideBar] = useState(true);
 
@@ -40,29 +40,29 @@ const CustomLayout: React.FC<CustomLayoutProps> = ({ children }) => {
     setShowSideBar(!showSideBar);
   };
 
-  useEffect(() => {
-    if (isConnected && chain && address && activeVault) {
-      const ascendCoreAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].ASCEND_CORE;
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
-          activeVault.token.address as Address
-        ].TROVE_MANAGER;
+  // useEffect(() => {
+  //   if (isConnected && chain && address && activeVault) {
+  //     const ascendCoreAddress: Address =
+  //       CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].ASCEND_CORE;
+  //     const troveManagerAddress: Address =
+  //       CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
+  //         activeVault.token.address as Address
+  //       ].TROVE_MANAGER;
 
-      paused(ascendCoreAddress).then((result) => {
-        dispatch(setIsPaused(!!result));
-      });
+  //     paused(ascendCoreAddress).then((result) => {
+  //       dispatch(setIsPaused(!!result));
+  //     });
 
-      vmPaused(troveManagerAddress).then((result) => {
-        dispatch(setIsVmPaused(!!result));
-      });
+  //     vmPaused(troveManagerAddress).then((result) => {
+  //       dispatch(setIsVmPaused(!!result));
+  //     });
 
-      sunsetting(troveManagerAddress).then((result) => {
-        dispatch(setIsSunSetting(!!result));
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, chain, address, activeVault]);
+  //     sunsetting(troveManagerAddress).then((result) => {
+  //       dispatch(setIsSunSetting(!!result));
+  //     });
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [isConnected, chain, address, activeVault]);
 
   useEffect(() => {
     const handleResize = () => {

@@ -1,14 +1,12 @@
-
-
 import { type ReactNode } from "react";
 
 import "@rainbow-me/rainbowkit/styles.css";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 
-
 import "@/styles/globals.scss";
 import { Providers } from "@/app/providers";
+import GlobalStateSetting from "@/components/GlobalStateSetting/page";
 import Loader from "@/components/Loader";
 
 import CustomLayout from "./CustomLayout";
@@ -25,15 +23,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
- 
-
-
   return (
     <html lang="en">
       <body className={manrope.className}>
         <Providers>
           <CustomLayout>
-            {children}
+            <GlobalStateSetting>{children}</GlobalStateSetting>
           </CustomLayout>
           <Loader />
         </Providers>
