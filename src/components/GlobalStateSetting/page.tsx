@@ -8,12 +8,21 @@ import { useAccount, useWatchBlockNumber } from "wagmi";
 
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import useAscendCore from "@/hooks/useAscendCore";
+import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useTroveManager from "@/hooks/useTroveManager";
 import {
+  setLatestBlockNumber,
   setIsPaused,
   setIsSunSetting,
   setIsVmPaused,
-  setLatestBlock,
+  setMaxSystemDebt,
+  setDefaultedDebt,
+  setTotalActiveDebt,
+  setMCR,
+  setMinNetDebt,
+  setCCR,
+  setTCR,
+  setGlobalSystemBalances,
 } from "@/lib/features/protocol/protocolSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getDefaultChainId } from "@/utils/chain";
@@ -24,10 +33,13 @@ interface GlobalStateSettingProps {
 
 const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const latestBlockNumber = useAppSelector((state) => state.protocol.latestBlockNumber);
 
   const { isConnected, chain, address } = useAccount();
   const { paused } = useAscendCore();
-  const { vmPaused, sunsetting } = useTroveManager();
+  const { vmPaused, sunsetting, maxSystemDebt, defaultedDebt, getTotalActiveDebt, MCR } =
+    useTroveManager();
+  const { minNetDebt, CCR, getTCR, getGlobalSystemBalances } = useBorrowerOperations();
   const dispatch = useAppDispatch();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -37,7 +49,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     chainId: chain?.id || defaultChainId,
     onBlockNumber(blockNumber) {
       console.log("New blockNumber", blockNumber);
-      dispatch(setLatestBlock(blockNumber.toString()));
+      dispatch(setLatestBlockNumber(blockNumber.toString()));
     },
   });
 
@@ -49,6 +61,8 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
           activeVault.token.address as Address
         ].TROVE_MANAGER;
+      const borrowerOperationsAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
 
       paused(ascendCoreAddress).then((result) => {
         dispatch(setIsPaused(!!result));
@@ -61,9 +75,61 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       sunsetting(troveManagerAddress).then((result) => {
         dispatch(setIsSunSetting(!!result));
       });
+
+      maxSystemDebt(troveManagerAddress).then((result) => {
+        dispatch(setMaxSystemDebt(result.toString()));
+      });
+
+      MCR(troveManagerAddress).then((result) => {
+        dispatch(setMCR(result.toString()));
+      });
+
+      minNetDebt(borrowerOperationsAddress).then((result) => {
+        dispatch(setMinNetDebt(result.toString()));
+      });
+
+      CCR(borrowerOperationsAddress).then((result) => {
+        dispatch(setCCR(result.toString()));
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, chain, address, activeVault]);
+
+  useEffect(() => {
+    if (isConnected && chain && address && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
+          activeVault.token.address as Address
+        ].TROVE_MANAGER;
+
+      const borrowerOperationsAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
+
+      defaultedDebt(troveManagerAddress).then((result) => {
+        dispatch(setDefaultedDebt(result.toString()));
+      });
+
+      getTotalActiveDebt(troveManagerAddress).then((result) => {
+        dispatch(setTotalActiveDebt(result.toString()));
+      });
+
+      getTCR(borrowerOperationsAddress).then((result) => {
+        dispatch(setTCR(result.toString()));
+      });
+
+      getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
+        console.log(result)
+
+        dispatch(
+          setGlobalSystemBalances({
+            totalPricedCollateral: result[0].toString(),
+            totalDebt: result[1].toString(),
+          }),
+        );
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, chain, address, activeVault, latestBlockNumber]);
 
   return <>{children}</>;
 };

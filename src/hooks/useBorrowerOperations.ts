@@ -80,7 +80,7 @@ export const useBorrowerOperations = (): {
   getTCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
   getGlobalSystemBalances: (
     borrowerOperationsAddress: Address,
-  ) => Promise<{ totalPricedCollateral: bigint; totalDebt: bigint }>;
+  ) => Promise<bigint[]>;
 } => {
   const { isConnected, address } = useAccount();
   const dispatch = useDispatch();
@@ -635,8 +635,8 @@ export const useBorrowerOperations = (): {
   const getGlobalSystemBalances = useCallback(
     async (
       borrowerOperationsAddress: Address,
-    ): Promise<{ totalPricedCollateral: bigint; totalDebt: bigint }> => {
-      const defaultValue = { totalPricedCollateral: 0n, totalDebt: 0n };
+    ): Promise<bigint[]> => {
+      const defaultValue = [0n, 0n];
 
       try {
         if (isConnected && address && publicClient && borrowerOperationsAddress) {
@@ -648,7 +648,7 @@ export const useBorrowerOperations = (): {
             args: [],
           });
 
-          return result as { totalPricedCollateral: bigint; totalDebt: bigint };
+          return result as bigint[];
         } else {
           return defaultValue;
         }
