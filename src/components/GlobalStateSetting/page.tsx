@@ -12,6 +12,7 @@ import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useTroveManager from "@/hooks/useTroveManager";
 import {
   setLatestBlockNumber,
+  setIsRecoveryMode,
   setIsPaused,
   setIsSunSetting,
   setIsVmPaused,
@@ -34,6 +35,7 @@ interface GlobalStateSettingProps {
 const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   const activeVault = useAppSelector((state) => state.vault.activeVault);
   const latestBlockNumber = useAppSelector((state) => state.protocol.latestBlockNumber);
+  const { CCR_value, TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
 
   const { isConnected, chain, address } = useAccount();
   const { paused } = useAscendCore();
@@ -48,7 +50,6 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   useWatchBlockNumber({
     chainId: chain?.id || defaultChainId,
     onBlockNumber(blockNumber) {
-      console.log("New blockNumber", blockNumber);
       dispatch(setLatestBlockNumber(blockNumber.toString()));
     },
   });
@@ -118,8 +119,6 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       });
 
       getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
-        console.log(result)
-
         dispatch(
           setGlobalSystemBalances({
             totalPricedCollateral: result[0].toString(),
@@ -130,6 +129,13 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, chain, address, activeVault, latestBlockNumber]);
+
+  useEffect(() => {
+    if (isConnected && chain && address) {
+      dispatch(setIsRecoveryMode(BigInt(TCR_value) < BigInt(CCR_value)));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [CCR_value, TCR_value]);
 
   return <>{children}</>;
 };

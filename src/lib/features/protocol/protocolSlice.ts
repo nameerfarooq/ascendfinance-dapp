@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // Define a type for the slice state
 interface ProtocolState {
+  isRecoveryMode: boolean;
   isPaused: boolean;
 }
 
@@ -11,13 +12,13 @@ interface TroveState {
   maxSystemDebt: string;
   defaultedDebt: string;
   totalActiveDebt: string;
-  MCR: string;
+  MCR_value: string;
 }
 
 interface BorrowOpState {
   minNetDebt: string;
-  CCR: string;
-  TCR: string;
+  CCR_value: string;
+  TCR_value: string;
   globalSystemBalances: {
     totalPricedCollateral: string;
     totalDebt: string;
@@ -35,6 +36,7 @@ interface ProtocolSliceState {
 const initialState: ProtocolSliceState = {
   latestBlockNumber: "0",
   protocol: {
+    isRecoveryMode: false,
     isPaused: false,
   },
   trove: {
@@ -43,12 +45,12 @@ const initialState: ProtocolSliceState = {
     maxSystemDebt: "0",
     defaultedDebt: "0",
     totalActiveDebt: "0",
-    MCR: "0",
+    MCR_value: "0",
   },
   borrowerOp: {
     minNetDebt: "0",
-    CCR: "0",
-    TCR: "0",
+    CCR_value: "0",
+    TCR_value: "0",
     globalSystemBalances: {
       totalPricedCollateral: "0",
       totalDebt: "0",
@@ -69,6 +71,9 @@ export const protocolSlice = createSlice({
     },
 
     // Protocol Related
+    setIsRecoveryMode: (state, action: PayloadAction<boolean>) => {
+      state.protocol.isRecoveryMode = action.payload;
+    },
     setIsPaused: (state, action: PayloadAction<boolean>) => {
       state.protocol.isPaused = action.payload;
     },
@@ -90,7 +95,7 @@ export const protocolSlice = createSlice({
       state.trove.totalActiveDebt = action.payload;
     },
     setMCR: (state, action: PayloadAction<string>) => {
-      state.trove.MCR = action.payload;
+      state.trove.MCR_value = action.payload;
     },
 
     // Borrower Operations Related
@@ -98,10 +103,10 @@ export const protocolSlice = createSlice({
       state.borrowerOp.minNetDebt = action.payload;
     },
     setCCR: (state, action: PayloadAction<string>) => {
-      state.borrowerOp.CCR = action.payload;
+      state.borrowerOp.CCR_value = action.payload;
     },
     setTCR: (state, action: PayloadAction<string>) => {
-      state.borrowerOp.TCR = action.payload;
+      state.borrowerOp.TCR_value = action.payload;
     },
     setGlobalSystemBalances: (
       state,
@@ -119,6 +124,7 @@ export const {
   // Latest Block
   setLatestBlockNumber,
   // Protocol Related
+  setIsRecoveryMode,
   setIsPaused,
   // Trove Manager Related
   setIsVmPaused,

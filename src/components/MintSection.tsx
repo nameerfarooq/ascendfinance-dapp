@@ -34,14 +34,19 @@ interface MintSectionProps {
 const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { isConnected, chain, address } = useAccount();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
-  const { isPaused } = useAppSelector((state) => state.protocol.protocol);
+  const { isRecoveryMode, isPaused } = useAppSelector((state) => state.protocol.protocol);
+  const { isVMPaused, isSunSetting, maxSystemDebt, defaultedDebt, totalActiveDebt, MCR_value } =
+    useAppSelector((state) => state.protocol.trove);
+  const { minNetDebt, CCR_value, globalSystemBalances } = useAppSelector(
+    (state) => state.protocol.borrowerOp,
+  );
 
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
@@ -153,8 +158,13 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     try {
       if (address) {
-
-        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Depositing",
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
 
         // Step#1
 
@@ -208,19 +218,34 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         );
         console.log("tx: ", tx);
         if (tx?.status === "success") {
-          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+          dispatch(
+            setLoader({
+              condition: "failed",
+              text1: "Depositing",
+              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+            }),
+          );
         } else {
-          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+          dispatch(
+            setLoader({
+              condition: "failed",
+              text1: "Depositing",
+              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+            }),
+          );
         }
 
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
       }
     } catch (error) {
-      dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+      dispatch(
+        setLoader({
+          condition: "failed",
+          text1: "Depositing",
+          text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+        }),
+      );
     }
   };
 
@@ -258,9 +283,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   const validateDeposit = () => {
-    if (isPaused) {
+    if (isPaused || isVMPaused || isSunSetting) {
       setIsDepositValid(false);
-      console.log("Protocol is paused.");
       return;
     }
 
@@ -269,13 +293,13 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (depositAmount === "") {
       setDepositError("");
       setIsDepositValid(false);
-    } else if (amount > 0 && amount <= tokenBalance) {
+    } else if (amount > 0n && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
-    } else if (amount > 0 && amount > tokenBalance) {
+    } else if (amount > 0n && amount > tokenBalance) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
-    } else if (amount <= 0) {
+    } else if (parseFloat(depositAmount) <= 0) {
       setIsDepositValid(false);
       setDepositError("Deposit amount must be greater than 0");
     }
@@ -283,15 +307,33 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const validateMint = () => {
     try {
-      if (isPaused) {
+      const userCollAmount = parseUnits(depositAmount, activeVault.token.decimals);
+      const userDebtAmount = parseUnits(mintAmount, 18);
+      const newTotalDebt = BigInt(globalSystemBalances.totalDebt) + userDebtAmount;
+      const newTotalPricedColl =
+        BigInt(globalSystemBalances.totalPricedCollateral) + userCollAmount * tokenPrice_USD;
+      const newTCR = newTotalPricedColl / newTotalDebt;
+
+      const userICR = collateralRatio / 100n;
+      const isICR_invalid = userICR < BigInt(CCR_value);
+      const isMCR_invalid = userICR < BigInt(MCR_value);
+      const isTCR_invalid = newTCR < BigInt(CCR_value);
+
+      if (
+        isPaused ||
+        isVMPaused ||
+        isSunSetting ||
+        (isRecoveryMode && isICR_invalid) ||
+        (!isRecoveryMode && isMCR_invalid) ||
+        (!isRecoveryMode && isTCR_invalid)
+      ) {
         setIsMintValid(false);
-        console.log("Protocol is paused.");
         return;
       }
 
       let maxMintAmount = 0n;
 
-      if (collateralRatio > 0) {
+      if (collateralRatio > 0n) {
         const collateralRatioProportion = collateralRatio / 100n;
 
         maxMintAmount =
@@ -304,17 +346,34 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       if (mintAmount === "") {
         setMintError("");
         setIsMintValid(false);
-      } else if (amount > 0 && amount <= maxMintAmount) {
+      } else if (amount > 0n && amount <= maxMintAmount) {
         setIsMintValid(true);
         setMintError("");
-      } else if (amount > 0 && amount > maxMintAmount) {
+      } else if (amount > 0n && amount > maxMintAmount) {
         if (isDebtRatioAuto) {
           setIsMintValid(false);
           setMintError("Desired mint value is greater than tokens available for mint");
         }
-      } else if (amount <= 0) {
+      } else if (parseFloat(mintAmount) <= 0) {
         setIsMintValid(false);
         setMintError("Desired mint value must be greater than 0");
+      } else if (amount < BigInt(minNetDebt)) {
+        setIsMintValid(false);
+        setMintError(
+          `User must have a min debt of ${formatDecimals(parseFloat(formatUnits(BigInt(minNetDebt), 18)), 2)}`,
+        );
+      } else if (BigInt(totalActiveDebt) + BigInt(defaultedDebt) + amount > BigInt(maxSystemDebt)) {
+        setIsMintValid(false);
+        setMintError("Collateral debt limit reached");
+      } else if (isRecoveryMode && isICR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above CCR");
+      } else if (!isRecoveryMode && isMCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above MCR");
+      } else if (!isRecoveryMode && isTCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Your Position will cause the GTCR to drop below CCR");
       }
     } catch (error) {
       console.log(error);
@@ -603,11 +662,23 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
-          <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
-            <p>
-              A minimum debt of {" "}<span className="font-bold"> 1000 GREEN </span>{" "} is required
-            </p>
-          </div>
+
+          {isPaused && (
+            <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
+              <p>
+                {isPaused
+                  ? "Protocol is currently paused"
+                  : isVMPaused
+                    ? "The collateral type is currently paused"
+                    : isSunSetting
+                      ? "The collateral type is currently being sunset"
+                      : ""}
+                {/* A minimum debt of{" "} */}
+                {/* <span className="font-bold"> 1000 GREEN </span> is required */}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-4">
             <ButtonStyle1
               disabled={!isConnected || isAllowanceEnough || !isDepositValid}
