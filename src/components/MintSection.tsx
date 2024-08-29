@@ -41,7 +41,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
-const dispatch = useDispatch()
+  const dispatch = useDispatch()
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
@@ -153,7 +153,7 @@ const dispatch = useDispatch()
   ) => {
     try {
       if (address) {
-        
+
         dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
 
         // Step#1
@@ -207,10 +207,10 @@ const dispatch = useDispatch()
           insertPosition[1],
         );
         console.log("tx: ", tx);
-        if(tx?.status === "success"){
+        if (tx?.status === "success") {
           dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
 
-        }else{
+        } else {
           dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
 
         }
@@ -499,7 +499,7 @@ const dispatch = useDispatch()
               <p className="font-medium text-[12px] leading-[24px]">
                 Wallet:{" "}
                 <span className="font-extrabold">
-                  {formatDecimals(Number(formatUnits(tokenBalance, activeVault.token.decimals)),2)}
+                  {formatDecimals(Number(formatUnits(tokenBalance, activeVault.token.decimals)), 2)}
                 </span>{" "}
                 {activeVault.token.symbol}
               </p>
@@ -603,8 +603,12 @@ const dispatch = useDispatch()
               {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
-
-          <div className="mt-8 flex gap-4">
+          <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
+            <p>
+              A minimum debt of {" "}<span className="font-bold"> 1000 GREEN </span>{" "} is required
+            </p>
+          </div>
+          <div className="flex gap-4">
             <ButtonStyle1
               disabled={!isConnected || isAllowanceEnough || !isDepositValid}
               text={`Approve ${activeVault.token.symbol}`}
