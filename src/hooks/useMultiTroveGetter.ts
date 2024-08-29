@@ -9,41 +9,56 @@ import { wagmiConfig } from "@/wagmi";
 
 const publicClient = wagmiConfig.getClient();
 
-
+interface CombinedTroveDataType {
+  owner: Address;
+  debt: bigint;
+  coll: bigint;
+  stake: bigint;
+  snapshotCollateral: bigint;
+  snapshotDebt: bigint;
+}
 
 export const useMultiTroveGetter = (): {
-    getMultipleSortedTroves: (troveManagerAddress: Address, count: bigint) => Promise<[[]]>;
+  getMultipleSortedTroves: (
+    multiTroveGetterAddress: Address,
+    troveManagerAddress: Address,
+    startIdx: number,
+    count: bigint,
+  ) => Promise<CombinedTroveDataType[]>;
 } => {
-    const { isConnected, address } = useAccount();
-    const getMultipleSortedTroves = useCallback(
-        async (troveManagerAddress: Address, count: bigint): Promise<[[]]> => {
-            try {
-                if (isConnected && address && publicClient && troveManagerAddress) {
-                    const startIdx = -1
-                    const troves = await readContract(publicClient, {
-                        abi: MultiTroveGetter_ABI.abi,
-                        account: address,
-                        address: troveManagerAddress,
-                        functionName: "getMultipleSortedTroves",
-                        args: [troveManagerAddress,startIdx,count],
-                    });
+  const { isConnected, address } = useAccount();
+  const getMultipleSortedTroves = useCallback(
+    async (
+      multiTroveGetterAddress: Address,
+      troveManagerAddress: Address,
+      startIdx: number,
+      count: bigint,
+    ): Promise<CombinedTroveDataType[]> => {
+      try {
+        if (isConnected && address && publicClient && troveManagerAddress) {
+          const troves = await readContract(publicClient, {
+            abi: MultiTroveGetter_ABI.abi,
+            account: address,
+            address: multiTroveGetterAddress,
+            functionName: "getMultipleSortedTroves",
+            args: [troveManagerAddress, startIdx, count],
+          });
 
-                    return troves as [[]];
-                } else {
-                    return [[]];
-                }
-            } catch (error) {
-                console.log("getMultipleSortedTroves(): ", error);
-                return [[]];
-            }
-        },
-        [isConnected, address],
-    );
+          return troves as [];
+        } else {
+          return [];
+        }
+      } catch (error) {
+        console.log("getMultipleSortedTroves(): ", error);
+        return [];
+      }
+    },
+    [isConnected, address],
+  );
 
-
-    return {
-        getMultipleSortedTroves
-    };
+  return {
+    getMultipleSortedTroves,
+  };
 };
 
 export default useMultiTroveGetter;

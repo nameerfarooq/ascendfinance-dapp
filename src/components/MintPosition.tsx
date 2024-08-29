@@ -42,7 +42,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const [minterror, setMintError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedMintAmount = useDebounce(mintAmount, 350);
+  const debouncedMintAmount = useDebounce(mintAmount, 450);
 
   const handleMintInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;

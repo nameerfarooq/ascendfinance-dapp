@@ -42,7 +42,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const [depositerror, setDepositError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedDepositAmount = useDebounce(depositAmount, 350);
+  const debouncedDepositAmount = useDebounce(depositAmount, 450);
   const dispatch = useDispatch();
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
