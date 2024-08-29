@@ -38,6 +38,7 @@ interface ContractAddressObjectType {
       ASCEND_CORE: Address;
       STABILITY_POOL: Address;
       MULTI_COLLATERAL_HINT_HELPERS: Address;
+      MULTI_TROVE_GETTER: Address;
       troves: {
         [x: Address]: {
           TROVE_MANAGER: Address;
@@ -56,6 +57,7 @@ interface ContractAddressObjectType {
       ASCEND_CORE: Address;
       STABILITY_POOL: Address;
       MULTI_COLLATERAL_HINT_HELPERS: Address;
+      MULTI_TROVE_GETTER: Address;
       troves: {
         [x: Address]: {
           TROVE_MANAGER: Address;

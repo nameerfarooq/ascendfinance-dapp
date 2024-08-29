@@ -20,6 +20,7 @@ import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
+import useMultiTroveGetter from "@/hooks/useMultiTroveGetter";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
@@ -31,17 +32,35 @@ import mintIcon from "../../public/icons/mintIcon.svg";
 interface MintSectionProps {
   handleShowMintSection: () => void;
 }
-const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
-  const { isConnected, chain, address } = useAccount();
-  const activeVault = useAppSelector((state) => state.vault.activeVault);
-  const { isPaused } = useAppSelector((state) => state.protocol.protocol);
 
+interface StatsType {
+  vaultPosition: number;
+  vaultCount: number;
+  debtInFront: bigint;
+  collateralRatio: bigint;
+  liquidationPrice: bigint;
+  remainingMintableGreen: bigint;
+}
+
+const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
+  const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const latestBlockNumber = useAppSelector((state) => state.protocol.latestBlockNumber);
+  const { isRecoveryMode, isPaused } = useAppSelector((state) => state.protocol.protocol);
+  const { isVMPaused, isSunSetting, maxSystemDebt, defaultedDebt, totalActiveDebt, MCR_value } =
+    useAppSelector((state) => state.protocol.trove);
+  const { minNetDebt, CCR_value, globalSystemBalances } = useAppSelector(
+    (state) => state.protocol.borrowerOp,
+  );
+
+  const dispatch = useDispatch();
+  const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
-  const dispatch = useDispatch()
+  const { getMultipleSortedTroves } = useMultiTroveGetter();
+
   const [showVaults, setshowVaults] = useState<boolean>(false);
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
@@ -57,11 +76,19 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
   const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
+  const [stats, setStats] = useState<StatsType>({
+    vaultPosition: 0,
+    vaultCount: 0,
+    debtInFront: 0n,
+    collateralRatio: 0n,
+    liquidationPrice: 0n,
+    remainingMintableGreen: 0n,
+  });
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedDepositAmount = useDebounce(depositAmount, 350);
-  const debouncedMintAmount = useDebounce(mintAmount, 350);
-  const debouncedCollateralRatio = useDebounce(collateralRatio, 350);
+  const debouncedDepositAmount = useDebounce(depositAmount, 450);
+  const debouncedMintAmount = useDebounce(mintAmount, 450);
+  const debouncedCollateralRatio = useDebounce(collateralRatio, 450);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -153,11 +180,15 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     try {
       if (address) {
-
-        dispatch(setLoader({ condition: "loading", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Depositing",
+            text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
 
         // Step#1
-
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
         console.log("sharesAmount: ", sharesAmount);
 
@@ -208,19 +239,34 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         );
         console.log("tx: ", tx);
         if (tx?.status === "success") {
-          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+          dispatch(
+            setLoader({
+              condition: "failed",
+              text1: "Depositing",
+              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+            }),
+          );
         } else {
-          dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+          dispatch(
+            setLoader({
+              condition: "failed",
+              text1: "Depositing",
+              text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+            }),
+          );
         }
 
         // Step#7
         fetchTokenbalance(activeVault.token.address, address);
       }
     } catch (error) {
-      dispatch(setLoader({ condition: "failed", text1: 'Depositing', text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}` }))
-
+      dispatch(
+        setLoader({
+          condition: "failed",
+          text1: "Depositing",
+          text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+        }),
+      );
     }
   };
 
@@ -258,9 +304,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   };
 
   const validateDeposit = () => {
-    if (isPaused) {
+    if (isPaused || isVMPaused || isSunSetting) {
       setIsDepositValid(false);
-      console.log("Protocol is paused.");
       return;
     }
 
@@ -269,13 +314,13 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (depositAmount === "") {
       setDepositError("");
       setIsDepositValid(false);
-    } else if (amount > 0 && amount <= tokenBalance) {
+    } else if (amount > 0n && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
-    } else if (amount > 0 && amount > tokenBalance) {
+    } else if (amount > 0n && amount > tokenBalance) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
-    } else if (amount <= 0) {
+    } else if (parseFloat(depositAmount) <= 0) {
       setIsDepositValid(false);
       setDepositError("Deposit amount must be greater than 0");
     }
@@ -283,15 +328,33 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   const validateMint = () => {
     try {
-      if (isPaused) {
+      const userCollAmount = parseUnits(depositAmount, activeVault.token.decimals);
+      const userDebtAmount = parseUnits(mintAmount, 18);
+      const newTotalDebt = BigInt(globalSystemBalances.totalDebt) + userDebtAmount;
+      const newTotalPricedColl =
+        BigInt(globalSystemBalances.totalPricedCollateral) + userCollAmount * tokenPrice_USD;
+      const newTCR = newTotalPricedColl / newTotalDebt;
+
+      const userICR = collateralRatio / 100n;
+      const isICR_invalid = userICR < BigInt(CCR_value);
+      const isMCR_invalid = userICR < BigInt(MCR_value);
+      const isTCR_invalid = newTCR < BigInt(CCR_value);
+
+      if (
+        isPaused ||
+        isVMPaused ||
+        isSunSetting ||
+        (isRecoveryMode && isICR_invalid) ||
+        (!isRecoveryMode && isMCR_invalid) ||
+        (!isRecoveryMode && isTCR_invalid)
+      ) {
         setIsMintValid(false);
-        console.log("Protocol is paused.");
         return;
       }
 
       let maxMintAmount = 0n;
 
-      if (collateralRatio > 0) {
+      if (collateralRatio > 0n) {
         const collateralRatioProportion = collateralRatio / 100n;
 
         maxMintAmount =
@@ -304,20 +367,130 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       if (mintAmount === "") {
         setMintError("");
         setIsMintValid(false);
-      } else if (amount > 0 && amount <= maxMintAmount) {
+      } else if (amount > 0n && amount <= maxMintAmount) {
         setIsMintValid(true);
         setMintError("");
-      } else if (amount > 0 && amount > maxMintAmount) {
+      } else if (amount > 0n && amount > maxMintAmount) {
         if (isDebtRatioAuto) {
           setIsMintValid(false);
           setMintError("Desired mint value is greater than tokens available for mint");
         }
-      } else if (amount <= 0) {
+      } else if (parseFloat(mintAmount) <= 0) {
         setIsMintValid(false);
         setMintError("Desired mint value must be greater than 0");
+      } else if (amount < BigInt(minNetDebt)) {
+        setIsMintValid(false);
+        setMintError(
+          `User must have a min debt of ${formatDecimals(parseFloat(formatUnits(BigInt(minNetDebt), 18)), 2)}`,
+        );
+      } else if (BigInt(totalActiveDebt) + BigInt(defaultedDebt) + amount > BigInt(maxSystemDebt)) {
+        setIsMintValid(false);
+        setMintError("Collateral debt limit reached");
+      } else if (isRecoveryMode && isICR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above CCR");
+      } else if (!isRecoveryMode && isMCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above MCR");
+      } else if (!isRecoveryMode && isTCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Your Position will cause the GTCR to drop below CCR");
       }
     } catch (error) {
       console.log(error);
+    }
+  };
+
+  const fetchStats = async () => {
+    if (
+      !depositAmount ||
+      !mintAmount ||
+      parseFloat(depositAmount) <= 0 ||
+      parseFloat(mintAmount) <= 0
+    ) {
+      setStats({
+        vaultPosition: 0,
+        vaultCount: 0,
+        debtInFront: 0n,
+        collateralRatio: 0n,
+        liquidationPrice: 0n,
+        remainingMintableGreen: 0n,
+      });
+    } else if (
+      isConnected &&
+      address &&
+      chain &&
+      activeVault &&
+      depositAmount &&
+      mintAmount &&
+      tokenPrice_USD
+    ) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+      const multiCollateralHintHelpersAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_COLLATERAL_HINT_HELPERS;
+      const multiTroveGetterAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_TROVE_GETTER;
+
+      const amount = parseUnits(depositAmount, activeVault.token.decimals);
+      const userCollAmount = parseUnits(depositAmount, activeVault.token.decimals);
+      const userDebtAmount = parseUnits(mintAmount, 18);
+
+      // 1)
+      const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
+
+      // 2)
+      const NCIR = await computeNominalCR(
+        multiCollateralHintHelpersAddress,
+        sharesAmount,
+        parseUnits(mintAmount, 18),
+      );
+
+      // 3)
+      const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+
+      // 4)
+      const multipleSortedTroves = await getMultipleSortedTroves(
+        multiTroveGetterAddress,
+        troveManagerAddress,
+        -1,
+        troveOwnersCount,
+      );
+
+      let debtBefore = 0n;
+      let position = multipleSortedTroves.length - 1;
+      // 5)
+      if (multipleSortedTroves.length) {
+        for (let i = 0; i < multipleSortedTroves.length; i++) {
+          // Calculate NICR of current owner
+          const currentOwnerNICR =
+            (multipleSortedTroves[i].coll * 100000000000000000000n) / multipleSortedTroves[i].debt;
+
+          // Compare userNICR with currentOwnerNICR
+          if (NCIR < currentOwnerNICR) {
+            position = i;
+            break;
+          }
+          debtBefore += multipleSortedTroves[i].debt;
+        }
+      }
+
+      // 6)
+      const liquidationPrice = (BigInt(MCR_value) * userDebtAmount) / userCollAmount;
+
+      // 7)
+      const remainingMintableGreen =
+        BigInt(maxSystemDebt) - BigInt(totalActiveDebt) - BigInt(defaultedDebt);
+
+      setStats({
+        vaultPosition: position,
+        vaultCount: Number(troveOwnersCount),
+        debtInFront: debtBefore,
+        collateralRatio: collateralRatio,
+        liquidationPrice: liquidationPrice,
+        remainingMintableGreen: remainingMintableGreen,
+      });
     }
   };
 
@@ -382,6 +555,26 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, chain, activeVault.token]);
+
+  useEffect(() => {
+    if (isConnected && address && chain) {
+      fetchStats();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestBlockNumber, debouncedMintAmount]);
+
+  useEffect(() => {
+    if (!isConnected) {
+      setStats({
+        vaultPosition: 0,
+        vaultCount: 0,
+        debtInFront: 0n,
+        collateralRatio: 0n,
+        liquidationPrice: 0n,
+        remainingMintableGreen: 0n,
+      });
+    }
+  }, [isConnected]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -603,11 +796,23 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
-          <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
-            <p>
-              A minimum debt of {" "}<span className="font-bold"> 1000 GREEN </span>{" "} is required
-            </p>
-          </div>
+
+          {isPaused && (
+            <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
+              <p>
+                {isPaused
+                  ? "Protocol is currently paused"
+                  : isVMPaused
+                    ? "The collateral type is currently paused"
+                    : isSunSetting
+                      ? "The collateral type is currently being sunset"
+                      : ""}
+                {/* A minimum debt of{" "} */}
+                {/* <span className="font-bold"> 1000 GREEN </span> is required */}
+              </p>
+            </div>
+          )}
+
           <div className="flex gap-4">
             <ButtonStyle1
               disabled={!isConnected || isAllowanceEnough || !isDepositValid}
@@ -629,29 +834,33 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
           <p className="text-white font-bold">Additional Info</p>
           <div className="flex items-center justify-between gap-2">
             <p>Vault position</p>
-            <p>1/14</p>
+            <p>
+              {stats.vaultPosition}/{stats.vaultCount}
+            </p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <p>Debt in front</p>
-            <p>0.0 GREEN</p>
+            <p>{formatDecimals(parseFloat(formatUnits(stats.debtInFront, 18)), 2)} GREEN</p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <p>Collateral Ratio</p>
             <p className="text-primaryColor">
-              {formatDecimals(parseFloat(formatUnits(collateralRatio, 18)), 2)}%
+              {formatDecimals(parseFloat(formatUnits(stats.collateralRatio, 18)), 2)}%
             </p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <p>Liquidation Price</p>
-            <p className="text-primaryColor">$ 4100.34</p>
+            <p className="text-primaryColor">
+              ${formatDecimals(parseFloat(formatUnits(stats.liquidationPrice, 18)), 2)}
+            </p>
           </div>
 
           <div className="flex items-center justify-between gap-2">
             <p>Remaining Mintable GREEN</p>
-            <p>93,999,999.00</p>
+            <p>{formatDecimals(parseFloat(formatUnits(stats.remainingMintableGreen, 18)), 2)}</p>
           </div>
         </div>
       </div>

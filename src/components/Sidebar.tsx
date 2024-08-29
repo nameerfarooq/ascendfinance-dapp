@@ -18,6 +18,7 @@ interface SidebarProps {
 }
 const Sidebar: React.FC<SidebarProps> = ({ showSideBar, handleShowSideBar }) => {
   const [showIcon, setshowIcon] = useState(false);
+  
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1280) {

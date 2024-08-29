@@ -33,7 +33,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
     const router = useRouter()
     const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 
-    const debouncedRepayAmount = useDebounce(repayAmount, 350);
+    const debouncedRepayAmount = useDebounce(repayAmount, 450);
     const [isValidated, setIsValidated] = useState(false);
     const [alreadyMintedDebt, setAlreadyMintedDebt] = useState(0n);
     const [error, setError] = useState("");

@@ -33,7 +33,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
   const { findInsertPosition } = useSortedTroves();
   const { withdrawColl } = useBorrowerOperations();
   const [withdrawAmount, setwithdrawAmount] = useState("");
-  const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
+  const debouncedwithdrawAmount = useDebounce(withdrawAmount, 450);
   const [isValidated, setIsValidated] = useState(false);
   const [error, setError] = useState("");
   const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n);
