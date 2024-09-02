@@ -340,14 +340,21 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       const isMCR_invalid = userICR < BigInt(MCR_value);
       const isTCR_invalid = newTCR < BigInt(CCR_value);
 
-      if (
-        isPaused ||
-        isVMPaused ||
-        isSunSetting ||
-        (isRecoveryMode && isICR_invalid) ||
-        (!isRecoveryMode && isMCR_invalid) ||
-        (!isRecoveryMode && isTCR_invalid)
-      ) {
+      if (isRecoveryMode && isICR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above CCR");
+        return;
+      } else if (!isRecoveryMode && isMCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Collateral ratio should be above MCR");
+        return;
+      } else if (!isRecoveryMode && isTCR_invalid) {
+        setIsMintValid(false);
+        setMintError("Your Position will cause the GTCR to drop below CCR");
+        return;
+      }
+
+      if (isPaused || isVMPaused || isSunSetting) {
         setIsMintValid(false);
         return;
       }
@@ -386,15 +393,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       } else if (BigInt(totalActiveDebt) + BigInt(defaultedDebt) + amount > BigInt(maxSystemDebt)) {
         setIsMintValid(false);
         setMintError("Collateral debt limit reached");
-      } else if (isRecoveryMode && isICR_invalid) {
-        setIsMintValid(false);
-        setMintError("Collateral ratio should be above CCR");
-      } else if (!isRecoveryMode && isMCR_invalid) {
-        setIsMintValid(false);
-        setMintError("Collateral ratio should be above MCR");
-      } else if (!isRecoveryMode && isTCR_invalid) {
-        setIsMintValid(false);
-        setMintError("Your Position will cause the GTCR to drop below CCR");
       }
     } catch (error) {
       console.log(error);
@@ -797,7 +795,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             </div>
           </div>
 
-          {isPaused && (
+          {(isPaused || isVMPaused || isSunSetting) && (
             <div className="my-5 flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
               <p>
                 {isPaused
@@ -807,8 +805,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                     : isSunSetting
                       ? "The collateral type is currently being sunset"
                       : ""}
-                {/* A minimum debt of{" "} */}
-                {/* <span className="font-bold"> 1000 GREEN </span> is required */}
               </p>
             </div>
           )}
