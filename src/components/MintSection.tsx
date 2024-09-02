@@ -697,7 +697,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             </div>
 
             <div
-              className={`${depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+              className={`${depositAmount !== "" && depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
             >
               <input
                 type="number"
@@ -714,7 +714,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               </div>
             </div>
 
-            {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
+            {depositAmount !== "" && depositerror && (
+              <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>
+            )}
           </div>
 
           <div
@@ -770,7 +772,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               <p>Mint</p>
 
               <div
-                className={`${minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+                className={`${mintAmount !== "" && minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
               >
                 <input
                   type="number"
@@ -791,7 +793,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                   </button>
                 </div> */}
               </div>
-              {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
+              {mintAmount !== "" && minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
 
