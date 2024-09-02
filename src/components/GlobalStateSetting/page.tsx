@@ -136,7 +136,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       dispatch(setIsRecoveryMode(isRecovery));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, chain, address, CCR_value, TCR_value]);
+  }, [isConnected, chain, address, activeVault, CCR_value, TCR_value]);
 
   return <>{children}</>;
 };
