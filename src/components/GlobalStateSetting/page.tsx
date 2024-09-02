@@ -132,10 +132,11 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
 
   useEffect(() => {
     if (isConnected && chain && address) {
-      dispatch(setIsRecoveryMode(BigInt(TCR_value) < BigInt(CCR_value)));
+      const isRecovery: boolean = BigInt(TCR_value) < BigInt(CCR_value);
+      dispatch(setIsRecoveryMode(isRecovery));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [CCR_value, TCR_value]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, chain, address, CCR_value, TCR_value]);
 
   return <>{children}</>;
 };
