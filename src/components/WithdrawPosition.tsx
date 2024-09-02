@@ -37,15 +37,15 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
   const { fetchPriceInUsd } = useTroveManager()
   const [withdrawAmount, setwithdrawAmount] = useState("");
   const debouncedwithdrawAmount = useDebounce(withdrawAmount, 450);
-  const [isWithdrawValid, setisWithdrawValid] = useState(true);
+  const [isWithdrawValid, setisWithdrawValid] = useState(false);
   const [error, setError] = useState("");
   const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n);
   const dispatch = useDispatch();
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
-  const { globalSystemBalances, CCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
+  const { globalSystemBalances, CCR_value, TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
   const { MCR_value } = useAppSelector((state) => state.protocol.trove);
-
+  const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([])
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);
@@ -195,10 +195,8 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         if (withDrawAmount <= 0n) {
           setisWithdrawValid(false);
           setError("Your desired withdraw amount is should be greater than 0");
-        } else if (withDrawAmount > alreadyDepositedTokens) {
-          setisWithdrawValid(false);
-          setError("Your desired withdraw amount is greater than deposited token");
-        } else {
+        }
+        else {
           setisWithdrawValid(true);
           setError("");
         }
@@ -207,52 +205,61 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
       //step 4
 
       const sharesToWithdraw = await convertYieldTokensToShares(troveManagerAddress, BigInt(debouncedwithdrawAmount))
-      console.log("sharesToWithdraw :", sharesToWithdraw)
+      const sharesToWithdrawInWei = parseUnits(sharesToWithdraw.toString(), activeVault.token.decimals)
+      // console.log("sharesToWithdraw :", sharesToWithdrawInWei)
 
-      const existingSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address)
-      console.log("existingSharesAndDebt :", existingSharesAndDebt)
+      // const existingSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address)
+      // console.log("existingSharesAndDebt :", existingSharesAndDebt)
 
-      const newShares = existingSharesAndDebt[0] - sharesToWithdraw
-      console.log("newShares :", newShares)
+      const newShares = existingSharesAndDebt[0] - sharesToWithdrawInWei
+      // console.log("newShares :", newShares)
 
       //step 5
 
       const tokensTobeWithdrawn = await convertSharesToYieldTokens(troveManagerAddress, newShares)
-      console.log("tokensTobeWithdrawn :", tokensTobeWithdrawn)
+      // console.log("tokensTobeWithdrawn :", tokensTobeWithdrawn)
 
       //step 6, 7, 10
 
-      console.log("isRecoveryMode : ", isRecoveryMode)
+      // console.log("isRecoveryMode : ", isRecoveryMode)
 
       //step 8
 
-      console.log("MCR_value : ", MCR_value)
+      // console.log("MCR_value : ", MCR_value)
 
       //step 9
-      
-      const totalPricedCollateral = globalSystemBalances.totalPricedCollateral
-      console.log("totalPricedCollateral : ", totalPricedCollateral)
 
+      const totalPricedCollateral = globalSystemBalances.totalPricedCollateral
+      console.log("totalPricedCollateral : ", BigInt(totalPricedCollateral) / 1000000000000000000n)
+      console.log("totalPricedCollateral converted", formatUnits(BigInt(totalPricedCollateral) / 1000000000000000000n, activeVault.token.decimals))
       //step 11
 
       const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
-      console.log("Price in USD", priceInUSD)
+      // console.log("Price in USD", priceInUSD)
 
       const userICR = tokensTobeWithdrawn * priceInUSD / existingSharesAndDebt[1]
-      console.log("userICR", userICR)
+      // console.log("userICR", userICR)
 
       //step 12
 
-      const newTotalPricedColl = totalPricedCollateral + (tokensTobeWithdrawn * priceInUSD);
-      const newTCR = Number(newTotalPricedColl) / Number(existingSharesAndDebt[1]);
-
+      const newTotalPricedColl = BigInt(totalPricedCollateral) - (tokensTobeWithdrawn * priceInUSD);
+      console.log("newTotalPricedColl :", newTotalPricedColl)
+      const newTCR = BigInt(newTotalPricedColl) / BigInt(globalSystemBalances?.totalDebt);
+      console.log("newTCR : ", newTCR)
+      console.log("newTCR formatted:", formatUnits(newTCR, activeVault.token.decimals))
+      console.log("CCR_value :", CCR_value)
+      console.log("TCR_value :", TCR_value)
       if (isRecoveryMode) {
         setisWithdrawValid(false)
         setError("Collateral withdrawal not permitted during Recovery Mode")
-      } else if (userICR < BigInt(MCR_value)) {
+      } else if (BigInt(debouncedwithdrawAmount) > alreadyDepositedTokens) {
+        setisWithdrawValid(false);
+        setError("Your desired withdraw amount is greater than deposited token")
+      }
+      else if (userICR < BigInt(MCR_value)) {
         setisWithdrawValid(false)
         setError("Collateral ratio should be above MCR")
-      } else if (newTCR < Number(CCR_value)) {
+      } else if (newTCR < BigInt(CCR_value)) {
         setisWithdrawValid(false)
         setError("Your Position will cause the GTCR to drop below CCR")
       } else {
@@ -263,10 +270,12 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
   };
 
   useEffect(() => {
-    getWithdrawValidated();
+    if (existingSharesAndDebt[0]) {
+      getWithdrawValidated();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedwithdrawAmount, address, activeVault]);
-  
+  }, [debouncedwithdrawAmount, address, activeVault, existingSharesAndDebt]);
+
   useEffect(() => {
     const getAlreadyDepositedTokens = async () => {
       if (address && chain && activeVault) {
@@ -277,6 +286,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
           troveManagerAddress,
           address,
         );
+        setexistingSharesAndDebt(troveCollSharesAndDebt)
         console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
         const depositedTokens = await convertSharesToYieldTokens(
           troveManagerAddress,
