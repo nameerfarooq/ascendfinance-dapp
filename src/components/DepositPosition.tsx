@@ -25,7 +25,9 @@ interface DepositPositionProps {
 
 const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const { isPaused } = useAppSelector((state) => state.protocol.protocol);
+  const { isVMPaused, isSunSetting } = useAppSelector((state) => state.protocol.trove);
 
+  const dispatch = useDispatch();
   const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();
   const { convertYieldTokensToShares, getTroveOwnersCount, getTroveCollSharesAndDebt } =
@@ -43,7 +45,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 450);
-  const dispatch = useDispatch();
+
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
       balanceOf(tokenAddress, walletAddress).then((balance) => {
@@ -221,9 +223,8 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   };
 
   const validateDeposit = () => {
-    if (isPaused) {
+    if (isPaused || isVMPaused || isSunSetting) {
       setIsDepositValid(false);
-      console.log("Protocol is paused.");
       return;
     }
 
@@ -236,13 +237,13 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     if (depositAmount === "") {
       setDepositError("");
       setIsDepositValid(false);
-    } else if (amount > 0 && amount <= tokenBalance) {
+    } else if (amount > 0n && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
-    } else if (amount > 0 && amount > tokenBalance) {
+    } else if (amount > 0n && amount > tokenBalance) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
-    } else if (amount <= 0) {
+    } else if (parseFloat(depositAmount) <= 0) {
       setIsDepositValid(false);
       setDepositError("Deposit amount must be greater than 0");
     }
@@ -321,6 +322,20 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
         </div>
         {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
       </div>
+
+      {(isPaused || isVMPaused || isSunSetting) && (
+        <div className="flex items-center justify-center rounded-lg p-4 border bg-[#ff4c0036] border-[#FF5710] text-[14px] text-[#FF5710]">
+          <p>
+            {isPaused
+              ? "Protocol is currently paused"
+              : isVMPaused
+                ? "The collateral type is currently paused"
+                : isSunSetting
+                  ? "The collateral type is currently being sunset"
+                  : ""}
+          </p>
+        </div>
+      )}
 
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
         <div
