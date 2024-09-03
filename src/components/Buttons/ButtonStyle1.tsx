@@ -4,7 +4,7 @@ interface ButtonStyle1Props {
   text: string;
   action: () => void;
   disabled: boolean;
-  btnLoading: boolean
+  btnLoading?: boolean
 }
 const ButtonStyle1: React.FC<ButtonStyle1Props> = ({ text, action, disabled=false, btnLoading = false }) => {
   return (
