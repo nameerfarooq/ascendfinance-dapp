@@ -168,13 +168,17 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
           parseUnits(depositAmount, activeVault.token.decimals),
           insertPosition[0],
           insertPosition[1],
-        );
+        ).then(() => {
+          fetchTokenbalance(activeVault.token.address, address);
+          setDepositAmount("");
+
+          if (address && chain) {
+            const borrowerOperationsAddress: Address =
+              CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
+            fetchTokenAllowance(activeVault.token.address, address, borrowerOperationsAddress);
+          }
+        });
         console.log("tx: ", tx);
-
-        // Step#9
-        fetchTokenbalance(activeVault.token.address, address);
-
-        setDepositAmount("");
       }
     } catch (error) {
       if (activeVault) {
