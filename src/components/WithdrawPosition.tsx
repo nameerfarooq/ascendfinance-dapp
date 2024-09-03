@@ -46,6 +46,8 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
   const { globalSystemBalances, CCR_value, TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
   const { MCR_value } = useAppSelector((state) => state.protocol.trove);
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([])
+  const [btnLoading, setbtnLoading] = useState(false)
+
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);
@@ -65,6 +67,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     amount: bigint,
   ) => {
     try {
+      setbtnLoading(true)
       if (activeVault) {
         dispatch(
           setLoader({
@@ -133,10 +136,15 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
           insertPosition[1],
         );
         console.log("tx: ", tx);
+        if (tx?.status === "success") {
+          setwithdrawAmount("");
+        }
+        setbtnLoading(false)
 
-        setwithdrawAmount("0");
       }
     } catch (error) {
+      setbtnLoading(false)
+
       if (activeVault) {
         dispatch(
           setLoader({
@@ -176,98 +184,92 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
     }
   };
   const getWithdrawValidated = async () => {
-    if (address && chain && activeVault) {
-      // const borrowerOperationsAddress: Address =
-      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
+    setbtnLoading(true)
+    if (address && chain && activeVault && debouncedwithdrawAmount) {
       const troveManagerAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
           .TROVE_MANAGER;
-      // const multiCollateralHintHelpersAddress: Address =
-      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_COLLATERAL_HINT_HELPERS;
-      // const sortedTrovesAddress: Address =
-      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-      //     .SORTED_TROVES;
-
 
       //step 1, 2, 3 
-      if (address && chain && activeVault && withdrawAmount) {
-        const withDrawAmount = parseUnits(debouncedwithdrawAmount, activeVault.token.decimals);
-        if (withDrawAmount <= 0n) {
-          setisWithdrawValid(false);
-          setError("Your desired withdraw amount is should be greater than 0");
-        }
-        else {
-          setisWithdrawValid(true);
-          setError("");
-        }
-      }
+      const withdrawAmountInWei = parseUnits(debouncedwithdrawAmount, activeVault.token.decimals);
 
-      //step 4
-
-      const sharesToWithdraw = await convertYieldTokensToShares(troveManagerAddress, BigInt(debouncedwithdrawAmount))
-      const sharesToWithdrawInWei = parseUnits(sharesToWithdraw.toString(), activeVault.token.decimals)
-      // console.log("sharesToWithdraw :", sharesToWithdrawInWei)
-
-      // const existingSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address)
-      // console.log("existingSharesAndDebt :", existingSharesAndDebt)
-
-      const newShares = existingSharesAndDebt[0] - sharesToWithdrawInWei
-      // console.log("newShares :", newShares)
-
-      //step 5
-
-      const tokensTobeWithdrawn = await convertSharesToYieldTokens(troveManagerAddress, newShares)
-      // console.log("tokensTobeWithdrawn :", tokensTobeWithdrawn)
-
-      //step 6, 7, 10
-
-      // console.log("isRecoveryMode : ", isRecoveryMode)
-
-      //step 8
-
-      // console.log("MCR_value : ", MCR_value)
-
-      //step 9
-
-      const totalPricedCollateral = globalSystemBalances.totalPricedCollateral
-      console.log("totalPricedCollateral : ", BigInt(totalPricedCollateral) / 1000000000000000000n)
-      console.log("totalPricedCollateral converted", formatUnits(BigInt(totalPricedCollateral) / 1000000000000000000n, activeVault.token.decimals))
-      //step 11
-
-      const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
-      // console.log("Price in USD", priceInUSD)
-
-      const userICR = tokensTobeWithdrawn * priceInUSD / existingSharesAndDebt[1]
-      // console.log("userICR", userICR)
-
-      //step 12
-
-      const newTotalPricedColl = BigInt(totalPricedCollateral) - (tokensTobeWithdrawn * priceInUSD);
-      console.log("newTotalPricedColl :", newTotalPricedColl)
-      const newTCR = BigInt(newTotalPricedColl) / BigInt(globalSystemBalances?.totalDebt);
-      console.log("newTCR : ", newTCR)
-      console.log("newTCR formatted:", formatUnits(newTCR, activeVault.token.decimals))
-      console.log("CCR_value :", CCR_value)
-      console.log("TCR_value :", TCR_value)
-      if (isRecoveryMode) {
-        setisWithdrawValid(false)
-        setError("Collateral withdrawal not permitted during Recovery Mode")
-      } else if (BigInt(debouncedwithdrawAmount) > alreadyDepositedTokens) {
+      if (withdrawAmountInWei <= 0n) {
         setisWithdrawValid(false);
-        setError("Your desired withdraw amount is greater than deposited token")
-      }
-      else if (userICR < BigInt(MCR_value)) {
-        setisWithdrawValid(false)
-        setError("Collateral ratio should be above MCR")
-      } else if (newTCR < BigInt(CCR_value)) {
-        setisWithdrawValid(false)
-        setError("Your Position will cause the GTCR to drop below CCR")
+        setError("Your desired withdraw amount should be greater than 0");
       } else {
-        setisWithdrawValid(true)
-        setError("")
+
+
+
+
+        //step 4
+
+        const sharesToWithdraw = await convertYieldTokensToShares(troveManagerAddress, BigInt(debouncedwithdrawAmount))
+        const sharesToWithdrawInWei = parseUnits(sharesToWithdraw.toString(), activeVault.token.decimals)
+        console.log("sharesToWithdraw :", sharesToWithdrawInWei)
+
+        console.log("existingSharesAndDebt :", existingSharesAndDebt)
+
+        const newShares = existingSharesAndDebt[0] - sharesToWithdrawInWei
+        console.log("newShares :", newShares)
+
+        //step 5
+
+        const tokensTobeWithdrawn = await convertSharesToYieldTokens(troveManagerAddress, newShares)
+        console.log("tokensTobeWithdrawn :", tokensTobeWithdrawn)
+
+        //step 6, 7, 10
+
+        console.log("isRecoveryMode : ", isRecoveryMode)
+
+        //step 8
+
+        console.log("MCR_value : ", MCR_value)
+
+        //step 9
+
+        const totalPricedCollateral = globalSystemBalances.totalPricedCollateral
+        console.log("totalPricedCollateral : ", BigInt(totalPricedCollateral) / 1000000000000000000n)
+        console.log("totalPricedCollateral converted", formatUnits(BigInt(totalPricedCollateral) / 1000000000000000000n, activeVault.token.decimals))
+        //step 11
+
+        const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+        console.log("Price in USD", priceInUSD)
+
+        const userICR = tokensTobeWithdrawn * priceInUSD / existingSharesAndDebt[1]
+        console.log("userICR", userICR)
+
+        //step 12
+
+        const newTotalPricedColl = BigInt(totalPricedCollateral) - (withdrawAmountInWei * priceInUSD);
+        console.log("newTotalPricedColl :", newTotalPricedColl)
+        const newTCR = BigInt(newTotalPricedColl) / BigInt(globalSystemBalances?.totalDebt);
+        console.log("newTCR : ", newTCR)
+        console.log("newTCR formatted:", formatUnits(newTCR, activeVault.token.decimals))
+        console.log("CCR_value :", CCR_value)
+        console.log("TCR_value :", TCR_value)
+        if (isRecoveryMode) {
+          setisWithdrawValid(false)
+          setError("Collateral withdrawal not permitted during Recovery Mode")
+        } else if (withdrawAmountInWei > alreadyDepositedTokens) {
+          setisWithdrawValid(false);
+          setError("Your desired withdraw amount is greater than deposited token")
+        }
+        else if (userICR < BigInt(MCR_value)) {
+          setisWithdrawValid(false)
+          setError("Collateral ratio should be above MCR")
+        } else if (newTCR < BigInt(CCR_value)) {
+          setisWithdrawValid(false)
+          setError("Your Position will cause the GTCR to drop below CCR")
+        } else {
+          setisWithdrawValid(true)
+          setError("")
+        }
       }
-    };
-  };
+    }
+    setbtnLoading(false)
+
+  }
+
 
   useEffect(() => {
     if (existingSharesAndDebt[0]) {
@@ -337,7 +339,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         </div>
       </div>
       <div>
-        <ButtonStyle1 disabled={!isWithdrawValid} action={handleCtaFunctions} text="Withdraw" />
+        <ButtonStyle1 btnLoading={btnLoading} disabled={!isWithdrawValid || withdrawAmount == '0' || btnLoading} action={handleCtaFunctions} text="Withdraw" />
       </div>
     </div>
   );
