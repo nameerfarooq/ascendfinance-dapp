@@ -17,12 +17,15 @@ import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
 
 import ButtonStyle1 from "./Buttons/ButtonStyle1";
+import { BlockNumber } from "./MainPane/components";
+import { formatDecimals } from "@/utils/formatters";
 
 
 interface WithdrawPositionProps {
   activeVault: VaultType | undefined;
+  collateralRatio: string
 }
-const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
+const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collateralRatio }) => {
   const { chain, address } = useAccount();
   // const { balanceOf } = useERC20Contract();
   const {
@@ -43,11 +46,37 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
   const dispatch = useDispatch();
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
+  const { latestBlockNumber } = useAppSelector((state) => state.protocol);
   const { globalSystemBalances, CCR_value, TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
   const { MCR_value } = useAppSelector((state) => state.protocol.trove);
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([])
   const [btnLoading, setbtnLoading] = useState(false)
+  const [priceInUSD, setpriceInUSD] = useState(0n)
+  const [newCollRatio, setNewCollRatio] = useState('0')
+  useEffect(() => {
+    const calcRatios = async () => {
+      if (address && chain && activeVault) {
 
+        const troveManagerAddress: Address =
+          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+            .TROVE_MANAGER;
+
+        const existingSharesInTokens = await convertSharesToYieldTokens(troveManagerAddress, existingSharesAndDebt[0])
+        const tokensTobeWithdrawn = parseUnits(debouncedwithdrawAmount, activeVault?.token?.decimals)
+        const newCollAmount = existingSharesInTokens - tokensTobeWithdrawn
+        const priceInUsd = await fetchPriceInUsd(troveManagerAddress)
+        setpriceInUSD(priceInUsd)
+
+        const newCollRatio = newCollAmount * priceInUsd / existingSharesAndDebt[1]
+        console.log("newCollRatio :", newCollRatio)
+        setNewCollRatio(formatUnits(newCollRatio, activeVault.token.decimals))
+
+      }
+    }
+    if (existingSharesAndDebt[0] && existingSharesAndDebt[1]) {
+      calcRatios()
+    }
+  }, [debouncedwithdrawAmount, latestBlockNumber])
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);
@@ -330,7 +359,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault }) => {
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
           <p className="text-primaryColor">
-            129% -{">"} <span className="text-[#C84D1E]"> 119%</span>
+            {collateralRatio}% -{">"} <span className="text-[#C84D1E]"> {formatDecimals(Number(newCollRatio), 2)}%</span>
           </p>
         </div>
         <div className="flex items-center justify-between gap-3">

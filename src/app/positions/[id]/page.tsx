@@ -198,7 +198,7 @@ const Page = ({ params }: { params: { id: string } }) => {
 
           {tab === 0 && <DepositPosition activeVault={activeVault} />}
           {tab === 1 && <MintPosition activeVault={activeVault} />}
-          {tab === 2 && <WithdrawPosition activeVault={activeVault} />}
+          {tab === 2 && <WithdrawPosition activeVault={activeVault} collateralRatio={positionStats?.collateralRatio}/>}
           {tab === 3 && <RepayPosition activeVault={activeVault} />}
         </div>
       </div>
