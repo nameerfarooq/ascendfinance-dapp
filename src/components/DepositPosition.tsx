@@ -44,7 +44,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   const [depositerror, setDepositError] = useState<string>("");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedDepositAmount = useDebounce(depositAmount, 450);
+  const debouncedDepositAmount = useDebounce(depositAmount, 350);
 
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
@@ -241,15 +241,15 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
     if (depositAmount === "") {
       setDepositError("");
       setIsDepositValid(false);
+    } else if (parseFloat(depositAmount) <= 0) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount must be greater than 0");
     } else if (amount > 0n && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
     } else if (amount > 0n && amount > tokenBalance) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
-    } else if (parseFloat(depositAmount) <= 0) {
-      setIsDepositValid(false);
-      setDepositError("Deposit amount must be greater than 0");
     }
   };
 

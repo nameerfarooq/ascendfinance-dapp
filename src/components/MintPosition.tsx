@@ -45,7 +45,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedMintAmount = useDebounce(mintAmount, 450);
+  const debouncedMintAmount = useDebounce(mintAmount, 350);
 
   const handleMintInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
@@ -255,15 +255,15 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     if (mintAmount === "") {
       setMintError("");
       setIsMintValid(false);
+    } else if (parseFloat(mintAmount) <= 0) {
+      setIsMintValid(false);
+      setMintError("Desired mint value must be greater than 0");
     } else if (amount > 0n && amount <= maxMintableAmount) {
       setIsMintValid(true);
       setMintError("");
     } else if (amount > 0n && amount > maxMintableAmount) {
       setIsMintValid(false);
       setMintError("Desired mint value is greater than tokens available for mint");
-    } else if (parseFloat(mintAmount) <= 0) {
-      setIsMintValid(false);
-      setMintError("Desired mint value must be greater than 0");
     }
 
     checkUserLevelValidations();
