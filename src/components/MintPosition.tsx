@@ -32,7 +32,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     getTroveCollSharesAndDebt,
     convertSharesToYieldTokens,
     fetchPriceInUsd,
-    MCR,
+    // MCR,
   } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
@@ -45,7 +45,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedMintAmount = useDebounce(mintAmount, 450);
+  const debouncedMintAmount = useDebounce(mintAmount, 350);
 
   const handleMintInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
@@ -129,11 +129,10 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
           insertPosition[0],
           insertPosition[1],
         ).then(() => {
-          calcMaxMintableAmount();
+          calcMaxMintableAmount(tokenPrice_USD);
+          setMintAmount("");
         });
         console.log("tx: ", tx);
-
-        setMintAmount("");
       }
     } catch (error) {
       if (activeVault) {
@@ -173,7 +172,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     }
   };
 
-  const calcMaxMintableAmount = async () => {
+  const calcMaxMintableAmount = async (priceInUSD: bigint) => {
     if (isConnected && address && chain && activeVault) {
       const troveManagerAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
@@ -189,10 +188,11 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       );
 
       // 3) Fetch USD Price
-      const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+      // const priceInUSD1 = await fetchPriceInUsd(troveManagerAddress);
 
       // 4) Fetch Minimum Collateral Ratio (MCR)
-      const minCollateralRatio = await MCR(troveManagerAddress);
+      // const minCollateralRatio1 = await MCR(troveManagerAddress);
+      const minCollateralRatio = BigInt(MCR_value);
 
       // 5) Calculate Max & Additional Debt
       const maxDebtAllowed = (priceInUSD * yieldTokens) / minCollateralRatio;
@@ -255,15 +255,15 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     if (mintAmount === "") {
       setMintError("");
       setIsMintValid(false);
+    } else if (parseFloat(mintAmount) <= 0) {
+      setIsMintValid(false);
+      setMintError("Desired mint value must be greater than 0");
     } else if (amount > 0n && amount <= maxMintableAmount) {
       setIsMintValid(true);
       setMintError("");
     } else if (amount > 0n && amount > maxMintableAmount) {
       setIsMintValid(false);
       setMintError("Desired mint value is greater than tokens available for mint");
-    } else if (parseFloat(mintAmount) <= 0) {
-      setIsMintValid(false);
-      setMintError("Desired mint value must be greater than 0");
     }
 
     checkUserLevelValidations();
@@ -280,9 +280,9 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
           .TROVE_MANAGER;
 
-      calcMaxMintableAmount();
       fetchPriceInUsd(troveManagerAddress).then((priceInUSD) => {
         setTokenPrice_USD(priceInUSD);
+        calcMaxMintableAmount(priceInUSD);
       });
     }
 
