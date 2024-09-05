@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
 
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
@@ -23,11 +23,16 @@ import { formatDecimals } from "@/utils/formatters";
 
 interface RepayPositionProps {
   activeVault: VaultType | undefined;
+  setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
 const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
   const { CCR_value, globalSystemBalances, minNetDebt } = useAppSelector(
     (state) => state.protocol.borrowerOp,
+  );
+  const { troveCollateralShares, troveDebt, troveOwnersCount } = useAppSelector(
+    (state) => state.protocol.trove,
   );
 
   const router = useRouter();
@@ -35,10 +40,10 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
   const { isConnected, chain, address } = useAccount();
   const { balanceOf } = useERC20Contract();
   const {
-    getTroveOwnersCount,
-    getTroveCollSharesAndDebt,
+    // getTroveOwnersCount,
+    // getTroveCollSharesAndDebt,
     convertSharesToYieldTokens,
-    fetchPriceInUsd,
+    // fetchPriceInUsd,
   } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
@@ -113,29 +118,28 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
       }
       if (address && activeVault) {
         // Step#1
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
-        console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+        //   troveManagerAddress,
+        //   address,
+        // );
+        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // Step#2
-        console.log("Repay Amount", parseUnits(debouncedRepayAmount, activeVault.token.decimals));
         const userDebt =
-          troveCollSharesAndDebt[1] - parseUnits(debouncedRepayAmount, activeVault.token.decimals);
+          BigInt(troveDebt) - parseUnits(debouncedRepayAmount, activeVault.token.decimals);
         console.log("userDebt", userDebt);
 
         // Step # 3
         const NCIR = await computeNominalCR(
           multiCollateralHintHelpersAddress,
-          troveCollSharesAndDebt[0],
+          BigInt(troveCollateralShares),
           userDebt,
         );
         console.log("NCIR: ", NCIR);
 
         // Step#4
-        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-        console.log("troveOwnersCount: ", troveOwnersCount);
+        // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        // console.log("troveOwnersCount: ", troveOwnersCount);
 
         // Step#5
         const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
@@ -224,8 +228,8 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
           .TROVE_MANAGER;
 
       const repayAmountBigInt = parseUnits(repayAmount, 18);
-      const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
-      const newUserDebt = troveCollSharesAndDebt[1] - repayAmountBigInt;
+      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+      const newUserDebt = BigInt(troveDebt) - repayAmountBigInt;
 
       setIsPositionClosing(false);
 
@@ -249,12 +253,12 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         if (!isRecoveryMode) {
           const yieldTokens = await convertSharesToYieldTokens(
             troveManagerAddress,
-            troveCollSharesAndDebt[0],
+            BigInt(troveCollateralShares),
           );
-          const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+          // const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
           const newTotalDebt = BigInt(globalSystemBalances.totalDebt) - repayAmountBigInt;
           const newTotalPricedColl =
-            BigInt(globalSystemBalances.totalPricedCollateral) - yieldTokens * priceInUSD;
+            BigInt(globalSystemBalances.totalPricedCollateral) - yieldTokens * BigInt(priceInUSD);
           const newTCR = newTotalPricedColl / newTotalDebt;
 
           if (newTCR < BigInt(CCR_value)) {
@@ -279,16 +283,18 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         const troveManagerAddress: Address =
           CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
             .TROVE_MANAGER;
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
-        console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+
+        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+        //   troveManagerAddress,
+        //   address,
+        // );
+        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+
         const mintedTokens = await convertSharesToYieldTokens(
           troveManagerAddress,
-          troveCollSharesAndDebt[1],
+          BigInt(troveDebt),
         );
-        console.log("mintedTokens :", mintedTokens);
+
         setAlreadyMintedDebt(mintedTokens);
       }
     };

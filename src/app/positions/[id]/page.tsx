@@ -13,9 +13,10 @@ import RepayPosition from "@/components/RepayPosition";
 import WithdrawPosition from "@/components/WithdrawPosition";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
+import useMultiTroveGetter from "@/hooks/useMultiTroveGetter";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setActiveVault } from "@/lib/features/vault/vaultSlice";
-import { useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import type { PositionStatsType, VaultType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
 import { formatDecimals } from "@/utils/formatters";
@@ -24,20 +25,34 @@ import gearIcon from "../../../../public/icons/gearIcon.svg";
 import goBackIcon from "../../../../public/icons/goBackIcon.svg";
 
 const Page = ({ params }: { params: { id: string } }) => {
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  const { isConnected, address, chain } = useAccount();
-  const { getTroveCollSharesAndDebt, convertSharesToYieldTokens, fetchPriceInUsd, getCurrentICR } =
-    useTroveManager();
-
-  const [tab, setTab] = useState(0);
-  const [activeVault, setActiveVaultState] = useState<VaultType>();
-  const [positionStats, setPositionStats] = useState<PositionStatsType>({
+  const initialPositionStats: PositionStatsType = {
     id: params.id as Address,
     collateral: "0",
     debt: "0",
     collateralRatio: "-",
-  });
+    liquidationPrice: "0",
+    positionIndex: 0
+  };
+
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
+  const { MCR_value, troveCollateralShares, troveDebt, troveOwnersCount } = useAppSelector(
+    (state) => state.protocol.trove,
+  );
+
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isConnected, address, chain } = useAccount();
+  const {
+    // getTroveCollSharesAndDebt,
+    convertSharesToYieldTokens,
+    getCurrentICR,
+  } = useTroveManager();
+  const { getMultipleSortedTroves } = useMultiTroveGetter();
+
+  const [tab, setTab] = useState(0);
+  const [activeVault, setActiveVaultState] = useState<VaultType>();
+  const [positionStats, setPositionStats] = useState<PositionStatsType>(initialPositionStats);
+  const [pingAmountChange, setPingAmountChange] = useState<string>("0");
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
@@ -48,28 +63,47 @@ const Page = ({ params }: { params: { id: string } }) => {
   ): Promise<PositionStatsType | undefined | void> => {
     try {
       if (isConnected && address && chain?.id && vaultId) {
+        let liquidationPrice = 0n;
         const troveManagerAddress: Address =
           CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].troves[vaultId].TROVE_MANAGER;
-
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
+        const multiTroveGetterAddress: Address =
+          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_TROVE_GETTER;
 
         const yieldTokens = await convertSharesToYieldTokens(
           troveManagerAddress,
-          troveCollSharesAndDebt[0],
+          BigInt(troveCollateralShares),
+        );
+        const currentICR = await getCurrentICR(troveManagerAddress, address, BigInt(priceInUSD));
+
+        if (BigInt(troveCollateralShares) > 0n) {
+          liquidationPrice =
+            (BigInt(MCR_value) * BigInt(troveDebt)) / BigInt(troveCollateralShares);
+        }
+
+        const multipleSortedTroves = await getMultipleSortedTroves(
+          multiTroveGetterAddress,
+          troveManagerAddress,
+          -1,
+          BigInt(troveOwnersCount),
         );
 
-        const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
-
-        const currentICR = await getCurrentICR(troveManagerAddress, address, priceInUSD);
+        let position = 0;
+        if (multipleSortedTroves.length) {
+          for (let i = 0; i < multipleSortedTroves.length; i++) {
+            if (multipleSortedTroves[i].owner === address) {
+              position = i;
+              break;
+            }
+          }
+        }
 
         return {
           id: vaultId,
           collateral: formatDecimals(parseFloat(formatUnits(yieldTokens, 18)), 2),
-          debt: formatDecimals(parseFloat(formatUnits(troveCollSharesAndDebt[1], 18)), 2),
+          debt: formatDecimals(parseFloat(formatUnits(BigInt(troveDebt), 18)), 2),
           collateralRatio: formatDecimals(parseFloat(formatUnits(currentICR * 100n, 18)), 2),
+          liquidationPrice: formatDecimals(parseFloat(formatUnits(liquidationPrice, 18)), 2),
+          positionIndex: position
         };
       }
     } catch (error) {
@@ -91,17 +125,12 @@ const Page = ({ params }: { params: { id: string } }) => {
         if (result) {
           setPositionStats(result);
         } else {
-          setPositionStats({
-            id: params.id as Address,
-            collateral: "0",
-            debt: "0",
-            collateralRatio: "-",
-          });
+          setPositionStats(initialPositionStats);
         }
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, chain, params]);
+  }, [isConnected, address, chain, params, pingAmountChange]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
@@ -144,7 +173,7 @@ const Page = ({ params }: { params: { id: string } }) => {
                 <p className="font-medium text-[12px]">{activeVault?.token.name || ""}</p>
               </div>
             </div>
-            <p className="font-bold text-[20px] leading-[40px]">-</p>
+            <p className="font-bold text-[20px] leading-[40px]">{positionStats.collateral}</p>
           </div>
 
           <div className="flex flex-col gap-4 my-12 text-[12px] text-lightGray font-medium">
@@ -161,11 +190,11 @@ const Page = ({ params }: { params: { id: string } }) => {
             </div>
             <div className="flex gap-2 justify-between items-center">
               <p>Liquidation Price</p>
-              <p className="text-[#FF5710]">-</p>
+              <p className="text-[#FF5710]">{positionStats.liquidationPrice}$</p>
             </div>
             <div className="flex gap-2 justify-between items-center">
               <p>Vault Position</p>
-              <p>1/2</p>
+              <p>{positionStats.positionIndex}/{troveOwnersCount}</p>
             </div>
           </div>
 
@@ -196,10 +225,22 @@ const Page = ({ params }: { params: { id: string } }) => {
             </button>
           </div>
 
-          {tab === 0 && <DepositPosition activeVault={activeVault} />}
-          {tab === 1 && <MintPosition activeVault={activeVault} />}
-          {tab === 2 && <WithdrawPosition activeVault={activeVault} collateralRatio={positionStats?.collateralRatio}/>}
-          {tab === 3 && <RepayPosition activeVault={activeVault} />}
+          {tab === 0 && (
+            <DepositPosition activeVault={activeVault} setPingAmountChange={setPingAmountChange} />
+          )}
+          {tab === 1 && (
+            <MintPosition activeVault={activeVault} setPingAmountChange={setPingAmountChange} />
+          )}
+          {tab === 2 && (
+            <WithdrawPosition
+              activeVault={activeVault}
+              collateralRatio={positionStats?.collateralRatio}
+              setPingAmountChange={setPingAmountChange}
+            />
+          )}
+          {tab === 3 && (
+            <RepayPosition activeVault={activeVault} setPingAmountChange={setPingAmountChange} />
+          )}
         </div>
       </div>
     </div>

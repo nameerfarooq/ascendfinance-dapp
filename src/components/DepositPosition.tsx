@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type Dispatch, type SetStateAction } from "react";
 
 import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
@@ -21,17 +21,18 @@ import type { VaultType } from "@/types";
 
 interface DepositPositionProps {
   activeVault: VaultType | undefined;
+  setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
 
-const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
+const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault, setPingAmountChange }) => {
   const { isPaused } = useAppSelector((state) => state.protocol.protocol);
-  const { isVMPaused, isSunSetting } = useAppSelector((state) => state.protocol.trove);
+  const { isVMPaused, isSunSetting, troveCollateralShares, troveDebt, troveOwnersCount } =
+    useAppSelector((state) => state.protocol.trove);
 
   const dispatch = useDispatch();
   const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();
-  const { convertYieldTokensToShares, getTroveOwnersCount, getTroveCollSharesAndDebt } =
-    useTroveManager();
+  const { convertYieldTokensToShares } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { addColl } = useBorrowerOperations();
@@ -116,27 +117,27 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
         console.log("sharesAmount: ", sharesAmount);
 
         // Step#2
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
-        console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+        //   troveManagerAddress,
+        //   address,
+        // );
+        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // Step#3
-        const totalShares = sharesAmount + troveCollSharesAndDebt[0];
+        const totalShares = sharesAmount + BigInt(troveCollateralShares);
         console.log("totalShares: ", totalShares);
 
         // Step # 4
         const NCIR = await computeNominalCR(
           multiCollateralHintHelpersAddress,
           totalShares,
-          troveCollSharesAndDebt[1],
+          BigInt(troveDebt),
         );
         console.log("NCIR: ", NCIR);
 
         // Step#5
-        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-        console.log("troveOwnersCount: ", troveOwnersCount);
+        // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        // console.log("troveOwnersCount: ", troveOwnersCount);
 
         // Step#6
         const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
@@ -254,6 +255,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault }) => {
   };
 
   useEffect(() => {
+    setPingAmountChange(depositAmount);
     validateDeposit();
 
     if (address && chain && activeVault) {

@@ -13,6 +13,9 @@ interface TroveState {
   defaultedDebt: string;
   totalActiveDebt: string;
   MCR_value: string;
+  troveCollateralShares: string;
+  troveDebt: string;
+  troveOwnersCount: string;
 }
 
 interface BorrowOpState {
@@ -27,6 +30,7 @@ interface BorrowOpState {
 
 interface ProtocolSliceState {
   latestBlockNumber: string;
+  priceInUSD: string;
   protocol: ProtocolState;
   trove: TroveState;
   borrowerOp: BorrowOpState;
@@ -35,6 +39,7 @@ interface ProtocolSliceState {
 // Define the initial state using that type
 const initialState: ProtocolSliceState = {
   latestBlockNumber: "0",
+  priceInUSD: "0",
   protocol: {
     isRecoveryMode: false,
     isPaused: false,
@@ -46,6 +51,9 @@ const initialState: ProtocolSliceState = {
     defaultedDebt: "0",
     totalActiveDebt: "0",
     MCR_value: "0",
+    troveCollateralShares: "0",
+    troveDebt: "0",
+    troveOwnersCount: "0",
   },
   borrowerOp: {
     minNetDebt: "0",
@@ -55,7 +63,7 @@ const initialState: ProtocolSliceState = {
       totalPricedCollateral: "0",
       totalDebt: "0",
     },
-  },
+  }
 };
 
 export const protocolSlice = createSlice({
@@ -68,6 +76,10 @@ export const protocolSlice = createSlice({
     // Latest Block Number
     setLatestBlockNumber: (state, action: PayloadAction<string>) => {
       state.latestBlockNumber = action.payload;
+    },
+    // Price In USD
+    setPriceInUSD: (state, action: PayloadAction<string>) => {
+      state.priceInUSD = action.payload;
     },
 
     // Protocol Related
@@ -97,6 +109,15 @@ export const protocolSlice = createSlice({
     setMCR: (state, action: PayloadAction<string>) => {
       state.trove.MCR_value = action.payload;
     },
+    setTroveCollateralShares: (state, action: PayloadAction<string>) => {
+      state.trove.troveCollateralShares = action.payload;
+    },
+    setTroveDebt: (state, action: PayloadAction<string>) => {
+      state.trove.troveDebt = action.payload;
+    },
+    setTroveOwnersCount: (state, action: PayloadAction<string>) => {
+      state.trove.troveOwnersCount = action.payload;
+    },
 
     // Borrower Operations Related
     setMinNetDebt: (state, action: PayloadAction<string>) => {
@@ -123,6 +144,8 @@ export const protocolSlice = createSlice({
 export const {
   // Latest Block
   setLatestBlockNumber,
+  // Price In USD
+  setPriceInUSD,
   // Protocol Related
   setIsRecoveryMode,
   setIsPaused,
@@ -133,6 +156,9 @@ export const {
   setDefaultedDebt,
   setTotalActiveDebt,
   setMCR,
+  setTroveCollateralShares,
+  setTroveDebt,
+  setTroveOwnersCount,
   // Borrower Operations Related
   setMinNetDebt,
   setCCR,

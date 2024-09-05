@@ -15,12 +15,12 @@ interface VaultType {
 }
 
 interface VaultsListType {
-  "DEV": {
+  DEV: {
     [x: number]: {
       [x: string]: VaultType;
     };
   };
-  "PROD": {
+  PROD: {
     [x: number]: {
       [x: string]: VaultType;
     };
@@ -28,7 +28,7 @@ interface VaultsListType {
 }
 
 interface ContractAddressObjectType {
-  "DEV": {
+  DEV: {
     [x: number]: {
       BORROWER_OPERATIONS: Address;
       DEBT_TOKEN: Address;
@@ -47,7 +47,7 @@ interface ContractAddressObjectType {
       };
     };
   };
-  "PROD": {
+  PROD: {
     [x: number]: {
       BORROWER_OPERATIONS: Address;
       DEBT_TOKEN: Address;
@@ -66,6 +66,15 @@ interface ContractAddressObjectType {
       };
     };
   };
+}
+
+interface CombinedTroveDataType {
+  owner: Address;
+  debt: bigint;
+  coll: bigint;
+  stake: bigint;
+  snapshotCollateral: bigint;
+  snapshotDebt: bigint;
 }
 
 interface PositionStatsType {
@@ -73,6 +82,15 @@ interface PositionStatsType {
   collateral: string;
   debt: string;
   collateralRatio: string;
+  liquidationPrice: string;
+  positionIndex: number;
 }
 
-export type { Token, VaultType, VaultsListType, ContractAddressObjectType, PositionStatsType };
+export type {
+  Token,
+  VaultType,
+  VaultsListType,
+  ContractAddressObjectType,
+  CombinedTroveDataType,
+  PositionStatsType,
+};
