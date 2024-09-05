@@ -51,7 +51,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([])
   const [btnLoading, setbtnLoading] = useState(false)
   // const [priceInUSD, setpriceInUSD] = useState(0n)
-  const [newCollRatio, setNewCollRatio] = useState('0')
+  const [newCollRatio, setNewCollRatio] = useState('')
 
   useEffect(() => {
     const calcRatios = async () => {
@@ -73,12 +73,14 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
 
       }
     }
-    if (existingSharesAndDebt[0] && existingSharesAndDebt[1]) {
+    if (existingSharesAndDebt[0] && existingSharesAndDebt[1] && debouncedwithdrawAmount > '0') {
       calcRatios()
+    } else {
+      setNewCollRatio('')
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedwithdrawAmount, latestBlockNumber])
-  
+
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);
@@ -228,9 +230,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         setisWithdrawValid(false);
         setError("Your desired withdraw amount should be greater than 0");
       } else {
-
-
-
+        setError("");
 
         //step 4
 
@@ -361,7 +361,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
           <p className="text-primaryColor">
-            {collateralRatio}% -{">"} <span className="text-[#C84D1E]"> {formatDecimals(Number(newCollRatio), 2)}%</span>
+            {collateralRatio}%  {newCollRatio && <span>-{">"} <span className="text-[#C84D1E]"> {formatDecimals(Number(newCollRatio), 2)}%</span></span>}
           </p>
         </div>
         <div className="flex items-center justify-between gap-3">
