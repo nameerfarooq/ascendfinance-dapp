@@ -15,10 +15,9 @@ import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
+import { formatDecimals } from "@/utils/formatters";
 
 import ButtonStyle1 from "./Buttons/ButtonStyle1";
-import { BlockNumber } from "./MainPane/components";
-import { formatDecimals } from "@/utils/formatters";
 
 
 interface WithdrawPositionProps {
@@ -39,7 +38,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   const { withdrawColl } = useBorrowerOperations();
   const { fetchPriceInUsd } = useTroveManager()
   const [withdrawAmount, setwithdrawAmount] = useState("");
-  const debouncedwithdrawAmount = useDebounce(withdrawAmount, 450);
+  const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
   const [isWithdrawValid, setisWithdrawValid] = useState(false);
   const [error, setError] = useState("");
   const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n);
@@ -51,8 +50,9 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   const { MCR_value } = useAppSelector((state) => state.protocol.trove);
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([])
   const [btnLoading, setbtnLoading] = useState(false)
-  const [priceInUSD, setpriceInUSD] = useState(0n)
+  // const [priceInUSD, setpriceInUSD] = useState(0n)
   const [newCollRatio, setNewCollRatio] = useState('0')
+
   useEffect(() => {
     const calcRatios = async () => {
       if (address && chain && activeVault) {
@@ -65,7 +65,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         const tokensTobeWithdrawn = parseUnits(debouncedwithdrawAmount, activeVault?.token?.decimals)
         const newCollAmount = existingSharesInTokens - tokensTobeWithdrawn
         const priceInUsd = await fetchPriceInUsd(troveManagerAddress)
-        setpriceInUSD(priceInUsd)
+        // setpriceInUSD(priceInUsd)
 
         const newCollRatio = newCollAmount * priceInUsd / existingSharesAndDebt[1]
         console.log("newCollRatio :", newCollRatio)
@@ -76,7 +76,9 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
     if (existingSharesAndDebt[0] && existingSharesAndDebt[1]) {
       calcRatios()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedwithdrawAmount, latestBlockNumber])
+  
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);

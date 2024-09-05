@@ -3,16 +3,9 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 
 import Image from "next/image";
-// import { useRouter } from "next/navigation";
-// import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
 import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
-
-// import vaultsList from "@/constants/vaults";
-// import { setActiveVault } from "@/lib/features/vault/vaultSlice";
-// import type { VaultType } from "@/types";
-// import { getDefaultChainId } from "@/utils/chain";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
@@ -86,9 +79,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   });
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const debouncedDepositAmount = useDebounce(depositAmount, 450);
-  const debouncedMintAmount = useDebounce(mintAmount, 450);
-  const debouncedCollateralRatio = useDebounce(collateralRatio, 450);
+  const debouncedDepositAmount = useDebounce(depositAmount, 350);
+  const debouncedMintAmount = useDebounce(mintAmount, 350);
+  const debouncedCollateralRatio = useDebounce(collateralRatio, 350);
 
   const handleShowVaults = () => {
     setshowVaults(!showVaults);
@@ -314,15 +307,15 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (depositAmount === "") {
       setDepositError("");
       setIsDepositValid(false);
+    } else if (parseFloat(depositAmount) <= 0) {
+      setIsDepositValid(false);
+      setDepositError("Deposit amount must be greater than 0");
     } else if (amount > 0n && amount <= tokenBalance) {
       setIsDepositValid(true);
       setDepositError("");
     } else if (amount > 0n && amount > tokenBalance) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
-    } else if (parseFloat(depositAmount) <= 0) {
-      setIsDepositValid(false);
-      setDepositError("Deposit amount must be greater than 0");
     }
   };
 
@@ -374,17 +367,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       if (mintAmount === "") {
         setMintError("");
         setIsMintValid(false);
-      } else if (amount > 0n && amount <= maxMintAmount) {
-        setIsMintValid(true);
-        setMintError("");
+      } else if (parseFloat(mintAmount) <= 0) {
+        setIsMintValid(false);
+        setMintError("Desired mint value must be greater than 0");
       } else if (amount > 0n && amount > maxMintAmount) {
         if (isDebtRatioAuto) {
           setIsMintValid(false);
           setMintError("Desired mint value is greater than tokens available for mint");
         }
-      } else if (parseFloat(mintAmount) <= 0) {
-        setIsMintValid(false);
-        setMintError("Desired mint value must be greater than 0");
       } else if (amount < BigInt(minNetDebt)) {
         setIsMintValid(false);
         setMintError(
@@ -393,6 +383,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       } else if (BigInt(totalActiveDebt) + BigInt(defaultedDebt) + amount > BigInt(maxSystemDebt)) {
         setIsMintValid(false);
         setMintError("Collateral debt limit reached");
+      } else if (amount > 0n && amount <= maxMintAmount) {
+        setIsMintValid(true);
+        setMintError("");
       }
     } catch (error) {
       console.log(error);
@@ -611,15 +604,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               className="flex flex-col gap-3 w-10/12 sm:w-4/12 cursor-pointer relative"
             >
               <p className="font-medium text-[12px] leading-[24px]">Vault</p>
-              {/* <div className="rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center">
-                <div className="flex items-center gap-3">
-                  <Image src={activeVault?.token?.logoURI || ""} width={30} alt="token icon" />
-                  <p className="font-bold text-[18px] leading-[36px]">
-                    {activeVault?.token?.symbol || ""}
-                  </p>
-                </div>
-                {showVaults ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
-              </div> */}
               <div className="flex gap-6 items-center">
                 <Image src={activeVault?.token?.logoURI || ""} alt="icon" width={55} />
                 <div className="flex flex-col gap-0">
@@ -631,30 +615,6 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                   </p>
                 </div>
               </div>
-
-              {/* {showVaults && (
-                <div className="absolute z-30 bg-secondaryColor top-[90px] left-0 w-full border rounded-2xl border-[#647594]">
-                  {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
-                    <Fragment key={vaultId}>
-                      <div
-                        onClick={() =>
-                          setActiveVaultFunc(nativeVaultsList[defaultChainId][vaultId])
-                        }
-                        className="flex items-center py-2 px-8 gap-3 rounded-2xl hover:bg-primaryColor"
-                      >
-                        <Image
-                          src={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
-                          width={30}
-                          alt="token icon"
-                        />
-                        <p className="font-bold text-[18px] leading-[36px]">
-                          {nativeVaultsList[defaultChainId][vaultId].token.symbol}
-                        </p>
-                      </div>
-                    </Fragment>
-                  ))}
-                </div>
-              )} */}
             </div>
 
             <div className="flex flex-col gap-3 w-10/12 sm:w-5/12 cursor-pointer relative">
@@ -697,7 +657,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
             </div>
 
             <div
-              className={`${depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+              className={`${depositAmount !== "" && depositerror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
             >
               <input
                 type="number"
@@ -714,7 +674,9 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               </div>
             </div>
 
-            {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
+            {depositAmount !== "" && depositerror && (
+              <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>
+            )}
           </div>
 
           <div
@@ -770,7 +732,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
               <p>Mint</p>
 
               <div
-                className={`${minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
+                className={`${mintAmount !== "" && minterror ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}
               >
                 <input
                   type="number"
@@ -780,18 +742,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
                   onChange={handleMintInputChange}
                   className="placeholder:text-lightGray bg-transparent outline-none border-none font-medium text-[14px] sm:text-[18px] leading-[36px] w-[130px] sm:w-auto flex-grow"
                 />
-                {/* <div className="flex items-center gap-28 font-medium text-[14px] leading-[28px]">
-                  <button
-                    type="button"
-                    disabled={isDebtRatioAuto}
-                    onClick={setMintToMax}
-                    className="font-bold text-lightGray"
-                  >
-                    Max
-                  </button>
-                </div> */}
               </div>
-              {minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
+              {mintAmount !== "" && minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
             </div>
           </div>
 

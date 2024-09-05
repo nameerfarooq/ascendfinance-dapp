@@ -117,7 +117,7 @@ export const useTroveManager = (): {
             args: [walletAddress],
           });
 
-          return troveCollSharesAndDebt as bigint[];
+          return troveCollSharesAndDebt as bigint[]; // ["collShares", "debt"]
         } else {
           return [0n, 0n];
         }
