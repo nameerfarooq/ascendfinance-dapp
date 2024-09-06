@@ -11,6 +11,7 @@ import PositionCard from "@/components/PositionCard";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
 import useTroveManager from "@/hooks/useTroveManager";
+import { useAppSelector } from "@/lib/hooks";
 import type { PositionStatsType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
 import { formatDecimals } from "@/utils/formatters";
@@ -18,13 +19,16 @@ import { formatDecimals } from "@/utils/formatters";
 import postionsIcon from "../../../public/icons/positionsIcon.svg";
 
 const Page = () => {
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
+  const {troveCollateralShares, troveDebt} = useAppSelector((state) => state.protocol.trove);
+
   const router = useRouter();
   const { isConnected, address, chain } = useAccount();
   const {
     getTroveStatus,
-    getTroveCollSharesAndDebt,
+    // getTroveCollSharesAndDebt,
     convertSharesToYieldTokens,
-    fetchPriceInUsd,
+    // fetchPriceInUsd,
     getCurrentICR,
   } = useTroveManager();
 
@@ -51,24 +55,24 @@ const Page = () => {
         const troveManagerAddress: Address =
           CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].troves[vaultId].TROVE_MANAGER;
 
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
+        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+        //   troveManagerAddress,
+        //   address,
+        // );
 
         const yieldTokens = await convertSharesToYieldTokens(
           troveManagerAddress,
-          troveCollSharesAndDebt[0],
+          BigInt(troveCollateralShares),
         );
 
-        const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
+        // const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
 
-        const currentICR = await getCurrentICR(troveManagerAddress, address, priceInUSD);
+        const currentICR = await getCurrentICR(troveManagerAddress, address, BigInt(priceInUSD));
 
         return {
           id: vaultId,
           collateral: formatDecimals(parseFloat(formatUnits(yieldTokens, 18)), 2),
-          debt: formatDecimals(parseFloat(formatUnits(troveCollSharesAndDebt[1], 18)), 2),
+          debt: formatDecimals(parseFloat(formatUnits(BigInt(troveDebt), 18)), 2),
           collateralRatio: formatDecimals(parseFloat(formatUnits(currentICR * 100n, 18)), 2),
         };
       }

@@ -12,6 +12,7 @@ import useBorrowerOperations from "@/hooks/useBorrowerOperations";
 import useTroveManager from "@/hooks/useTroveManager";
 import {
   setLatestBlockNumber,
+  setPriceInUSD,
   setIsRecoveryMode,
   setIsPaused,
   setIsSunSetting,
@@ -20,10 +21,13 @@ import {
   setDefaultedDebt,
   setTotalActiveDebt,
   setMCR,
+  setTroveCollateralShares,
+  setTroveDebt,
+  setTroveOwnersCount,
   setMinNetDebt,
   setCCR,
   setTCR,
-  setGlobalSystemBalances,
+  setGlobalSystemBalances
 } from "@/lib/features/protocol/protocolSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getDefaultChainId } from "@/utils/chain";
@@ -37,12 +41,21 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   const latestBlockNumber = useAppSelector((state) => state.protocol.latestBlockNumber);
   const { CCR_value, TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
 
-  const { isConnected, chain, address } = useAccount();
-  const { paused } = useAscendCore();
-  const { vmPaused, sunsetting, maxSystemDebt, defaultedDebt, getTotalActiveDebt, MCR } =
-    useTroveManager();
-  const { minNetDebt, CCR, getTCR, getGlobalSystemBalances } = useBorrowerOperations();
   const dispatch = useAppDispatch();
+  const { paused } = useAscendCore();
+  const { isConnected, chain, address } = useAccount();
+  const { minNetDebt, CCR, getTCR, getGlobalSystemBalances } = useBorrowerOperations();
+  const {
+    vmPaused,
+    sunsetting,
+    maxSystemDebt,
+    defaultedDebt,
+    getTotalActiveDebt,
+    MCR,
+    fetchPriceInUsd,
+    getTroveCollSharesAndDebt,
+    getTroveOwnersCount,
+  } = useTroveManager();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const defaultChainId = getDefaultChainId(chain);
@@ -106,12 +119,25 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       const borrowerOperationsAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
 
+      fetchPriceInUsd(troveManagerAddress).then((result) => {
+        dispatch(setPriceInUSD(result.toString()));
+      });
+
       defaultedDebt(troveManagerAddress).then((result) => {
         dispatch(setDefaultedDebt(result.toString()));
       });
 
       getTotalActiveDebt(troveManagerAddress).then((result) => {
         dispatch(setTotalActiveDebt(result.toString()));
+      });
+
+      getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
+        dispatch(setTroveCollateralShares(result[0].toString()));
+        dispatch(setTroveDebt(result[1].toString()));
+      });
+
+      getTroveOwnersCount(troveManagerAddress).then((result) => {
+        dispatch(setTroveOwnersCount(result.toString()));
       });
 
       getTCR(borrowerOperationsAddress).then((result) => {

@@ -37,18 +37,27 @@ interface StatsType {
 
 const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const latestBlockNumber = useAppSelector((state) => state.protocol.latestBlockNumber);
   const { isRecoveryMode, isPaused } = useAppSelector((state) => state.protocol.protocol);
-  const { isVMPaused, isSunSetting, maxSystemDebt, defaultedDebt, totalActiveDebt, MCR_value } =
-    useAppSelector((state) => state.protocol.trove);
+  const {
+    isVMPaused,
+    isSunSetting,
+    maxSystemDebt,
+    defaultedDebt,
+    totalActiveDebt,
+    MCR_value,
+    troveOwnersCount,
+  } = useAppSelector((state) => state.protocol.trove);
   const { minNetDebt, CCR_value, globalSystemBalances } = useAppSelector(
     (state) => state.protocol.borrowerOp,
   );
+  // const { multipleSortedTroves } = useAppSelector((state) => state.protocol.multiTrove);
 
   const dispatch = useDispatch();
   const { isConnected, chain, address } = useAccount();
   const { balanceOf, allowance, approve } = useERC20Contract();
-  const { convertYieldTokensToShares, getTroveOwnersCount, fetchPriceInUsd } = useTroveManager();
+  const { convertYieldTokensToShares } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { openTrove } = useBorrowerOperations();
@@ -68,7 +77,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   const [depositerror, setDepositError] = useState<string>("");
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
-  const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
+  // const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
   const [stats, setStats] = useState<StatsType>({
     vaultPosition: 0,
     vaultCount: 0,
@@ -96,7 +105,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     if (collateralRatio > 0) {
       const collateralRatioProportion = collateralRatio / 100n;
       const mintAmount =
-        (parseUnits(depositAmount, activeVault.token.decimals) * tokenPrice_USD) /
+        (parseUnits(depositAmount, activeVault.token.decimals) * BigInt(priceInUSD)) /
         collateralRatioProportion;
 
       setMintAmount(formatUnits(mintAmount, 18));
@@ -194,8 +203,8 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         console.log("NCIR: ", NCIR);
 
         // Step#3
-        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-        console.log("troveOwnersCount: ", troveOwnersCount);
+        // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        // console.log("troveOwnersCount: ", troveOwnersCount);
 
         // Step#4
         const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
@@ -325,7 +334,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       const userDebtAmount = parseUnits(mintAmount, 18);
       const newTotalDebt = BigInt(globalSystemBalances.totalDebt) + userDebtAmount;
       const newTotalPricedColl =
-        BigInt(globalSystemBalances.totalPricedCollateral) + userCollAmount * tokenPrice_USD;
+        BigInt(globalSystemBalances.totalPricedCollateral) + userCollAmount * BigInt(priceInUSD);
       const newTCR = newTotalPricedColl / newTotalDebt;
 
       const userICR = collateralRatio / 100n;
@@ -358,7 +367,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         const collateralRatioProportion = collateralRatio / 100n;
 
         maxMintAmount =
-          (parseUnits(depositAmount, activeVault.token.decimals) * tokenPrice_USD) /
+          (parseUnits(depositAmount, activeVault.token.decimals) * BigInt(priceInUSD)) /
           collateralRatioProportion;
       }
 
@@ -414,7 +423,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       activeVault &&
       depositAmount &&
       mintAmount &&
-      tokenPrice_USD
+      priceInUSD
     ) {
       const troveManagerAddress: Address =
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
@@ -439,14 +448,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
       );
 
       // 3)
-      const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+      // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
 
       // 4)
       const multipleSortedTroves = await getMultipleSortedTroves(
         multiTroveGetterAddress,
         troveManagerAddress,
         -1,
-        troveOwnersCount,
+        BigInt(troveOwnersCount),
       );
 
       let debtBefore = 0n;
@@ -523,7 +532,7 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
       if (parseUnits(mintAmount, 18) > 0) {
         collateralRatioPercentage =
-          ((tokenPrice_USD * parseUnits(depositAmount, activeVault.token.decimals)) /
+          ((BigInt(priceInUSD) * parseUnits(depositAmount, activeVault.token.decimals)) /
             parseUnits(mintAmount, 18)) *
           100n;
       }
@@ -535,14 +544,14 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
 
   useEffect(() => {
     if (address && chain && activeVault) {
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-          .TROVE_MANAGER;
+      // const troveManagerAddress: Address =
+      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+      //     .TROVE_MANAGER;
 
       fetchTokenbalance(activeVault.token.address, address);
-      fetchPriceInUsd(troveManagerAddress).then((priceInUSD) => {
-        setTokenPrice_USD(priceInUSD);
-      });
+      // fetchPriceInUsd(troveManagerAddress).then((priceInUSD) => {
+      //   setTokenPrice_USD(priceInUSD);
+      // });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address, chain, activeVault.token]);

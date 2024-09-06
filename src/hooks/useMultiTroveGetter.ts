@@ -5,18 +5,10 @@ import { readContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
 import MultiTroveGetter_ABI from "@/abis/MultiTroveGetter.json";
+import type { CombinedTroveDataType } from "@/types";
 import { wagmiConfig } from "@/wagmi";
 
 const publicClient = wagmiConfig.getClient();
-
-interface CombinedTroveDataType {
-  owner: Address;
-  debt: bigint;
-  coll: bigint;
-  stake: bigint;
-  snapshotCollateral: bigint;
-  snapshotDebt: bigint;
-}
 
 export const useMultiTroveGetter = (): {
   getMultipleSortedTroves: (

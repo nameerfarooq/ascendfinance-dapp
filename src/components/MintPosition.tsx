@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import {
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type Dispatch,
+  type FC,
+  type SetStateAction,
+} from "react";
 
 import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
@@ -15,23 +22,38 @@ import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
-import type { VaultType } from "@/types";
+import type { PositionStatsType, VaultType } from "@/types";
+import { formatDecimals } from "@/utils/formatters";
 
 interface MintPositionProps {
   activeVault: VaultType | undefined;
+  positionStats: PositionStatsType;
+  setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
 
-const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
+const MintPosition: FC<MintPositionProps> = ({
+  activeVault,
+  positionStats,
+  setPingAmountChange,
+}) => {
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isPaused, isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
-  const { isVMPaused, isSunSetting, MCR_value } = useAppSelector((state) => state.protocol.trove);
+  const {
+    isVMPaused,
+    isSunSetting,
+    MCR_value,
+    troveCollateralShares,
+    troveDebt,
+    troveOwnersCount,
+  } = useAppSelector((state) => state.protocol.trove);
   const { CCR_value, globalSystemBalances } = useAppSelector((state) => state.protocol.borrowerOp);
 
   const { isConnected, chain, address } = useAccount();
   const {
-    getTroveOwnersCount,
-    getTroveCollSharesAndDebt,
+    // getTroveOwnersCount,
+    // getTroveCollSharesAndDebt,
     convertSharesToYieldTokens,
-    fetchPriceInUsd,
+    // fetchPriceInUsd,
     // MCR,
   } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
@@ -42,7 +64,8 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
   const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
-  const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
+  const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
+  // const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedMintAmount = useDebounce(mintAmount, 350);
@@ -76,26 +99,26 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       }
       if (address && activeVault) {
         // Step#1
-        const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-          troveManagerAddress,
-          address,
-        );
-        console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+        //   troveManagerAddress,
+        //   address,
+        // );
+        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // Step#2
-        const totalDebt = troveCollSharesAndDebt[1] + amount;
+        const totalDebt = BigInt(troveCollateralShares) + amount;
 
         // Step#3
         const NCIR = await computeNominalCR(
           multiCollateralHintHelpersAddress,
-          troveCollSharesAndDebt[0],
+          BigInt(troveCollateralShares),
           totalDebt,
         );
         console.log("NCIR: ", NCIR);
 
         // Step#4
-        const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-        console.log("troveOwnersCount: ", troveOwnersCount);
+        // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
+        // console.log("troveOwnersCount: ", troveOwnersCount);
 
         // Step#5
         const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
@@ -129,7 +152,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
           insertPosition[0],
           insertPosition[1],
         ).then(() => {
-          calcMaxMintableAmount(tokenPrice_USD);
+          calcMaxMintableAmount(BigInt(priceInUSD));
           setMintAmount("");
         });
         console.log("tx: ", tx);
@@ -179,12 +202,12 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
           .TROVE_MANAGER;
 
       // 1) Fetch Collateral Shares & Debt
-      const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
 
       // 2) Convert Shares to Yield token
       const yieldTokens = await convertSharesToYieldTokens(
         troveManagerAddress,
-        troveCollSharesAndDebt[0],
+        BigInt(troveCollateralShares),
       );
 
       // 3) Fetch USD Price
@@ -196,7 +219,7 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
 
       // 5) Calculate Max & Additional Debt
       const maxDebtAllowed = (priceInUSD * yieldTokens) / minCollateralRatio;
-      const additionalDebtAllowed = maxDebtAllowed - troveCollSharesAndDebt[1];
+      const additionalDebtAllowed = maxDebtAllowed - BigInt(troveDebt);
       setMaxMintableAmount(additionalDebtAllowed);
     }
   };
@@ -210,19 +233,19 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       const amount = parseUnits(mintAmount || "0", 18);
 
       // 1) Fetch Collateral Shares & Debt
-      const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
+      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
 
       // 2) Convert Shares to Yield token
       const yieldTokens = await convertSharesToYieldTokens(
         troveManagerAddress,
-        troveCollSharesAndDebt[0],
+        BigInt(troveCollateralShares),
       );
 
       // 3) Calculate User Debt
-      const totalUserDebt = troveCollSharesAndDebt[1] + amount;
+      const totalUserDebt = BigInt(troveDebt) + amount;
 
       // 4) Calculate Collateral Ratio
-      const userICR = (yieldTokens * tokenPrice_USD) / totalUserDebt;
+      const userICR = (yieldTokens * BigInt(priceInUSD)) / totalUserDebt;
 
       // 5) Calculate Total Collateral Ratio
       const newTotalDebt = BigInt(globalSystemBalances.totalDebt) + amount;
@@ -269,25 +292,42 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
     checkUserLevelValidations();
   };
 
+  const calcNewCollRatio = () => {
+    if (activeVault) {
+      if (
+        mintAmount &&
+        mintAmount !== "" &&
+        priceInUSD &&
+        priceInUSD !== "" &&
+        priceInUSD !== "0"
+      ) {
+        const newDebtAmount = BigInt(troveDebt) + parseUnits(mintAmount, 18);
+        const collRatio =
+          ((BigInt(troveCollateralShares) * BigInt(priceInUSD)) / newDebtAmount) * 100n;
+
+        setNewCollateralRatio(
+          parseFloat(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2)),
+        );
+      } else {
+        setNewCollateralRatio(0);
+      }
+    }
+  };
+
   useEffect(() => {
+    setPingAmountChange(mintAmount);
     validateMint();
+    calcNewCollRatio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount, isRecoveryMode]);
 
   useEffect(() => {
     if (address && chain && activeVault) {
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-          .TROVE_MANAGER;
-
-      fetchPriceInUsd(troveManagerAddress).then((priceInUSD) => {
-        setTokenPrice_USD(priceInUSD);
-        calcMaxMintableAmount(priceInUSD);
-      });
+      calcMaxMintableAmount(BigInt(priceInUSD));
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, chain, activeVault?.token]);
+  }, [isConnected, address, chain, activeVault?.token, priceInUSD]);
 
   return (
     <div className="flex flex-col gap-12 pt-12">
@@ -331,8 +371,19 @@ const MintPosition: React.FC<MintPositionProps> = ({ activeVault }) => {
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
-          <p className="text-primaryColor">
-            129% -{">"} <span className="text-[#C84D1E]"> 119%</span>
+          <p>
+            {positionStats.collateralRatio ? (
+              <span className="text-primaryColor">{`${positionStats.collateralRatio}%`}</span>
+            ) : (
+              "-"
+            )}
+
+            {newCollateralRatio ? (
+              <span className="text-[#C84D1E]">
+                {" -> "}
+                {`${newCollateralRatio}%`}
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="flex items-center justify-between gap-3">
