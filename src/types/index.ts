@@ -82,8 +82,8 @@ interface PositionStatsType {
   collateral: string;
   debt: string;
   collateralRatio: string;
-  liquidationPrice: string;
-  positionIndex: number;
+  liquidationPrice?: string;
+  positionIndex?: number;
 }
 
 export type {
