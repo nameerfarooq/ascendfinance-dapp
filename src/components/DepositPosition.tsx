@@ -17,14 +17,21 @@ import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
-import type { VaultType } from "@/types";
+import type { PositionStatsType, VaultType } from "@/types";
+import { formatDecimals } from "@/utils/formatters";
 
 interface DepositPositionProps {
   activeVault: VaultType | undefined;
+  positionStats: PositionStatsType;
   setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
 
-const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault, setPingAmountChange }) => {
+const DepositPosition: React.FC<DepositPositionProps> = ({
+  activeVault,
+  positionStats,
+  setPingAmountChange,
+}) => {
+  const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isPaused } = useAppSelector((state) => state.protocol.protocol);
   const { isVMPaused, isSunSetting, troveCollateralShares, troveDebt, troveOwnersCount } =
     useAppSelector((state) => state.protocol.trove);
@@ -43,6 +50,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault, setPingA
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [depositerror, setDepositError] = useState<string>("");
+  const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
@@ -254,9 +262,32 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault, setPingA
     }
   };
 
+  const calcNewCollRatio = () => {
+    if (activeVault) {
+      if (
+        depositAmount &&
+        depositAmount !== "" &&
+        priceInUSD &&
+        priceInUSD !== "" &&
+        priceInUSD !== "0"
+      ) {
+        const newCollAmount =
+          BigInt(troveCollateralShares) + parseUnits(depositAmount, activeVault?.token.decimals);
+
+        const collRatio = ((newCollAmount * BigInt(priceInUSD)) / BigInt(troveDebt)) * 100n;
+        setNewCollateralRatio(
+          parseFloat(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2)),
+        );
+      } else {
+        setNewCollateralRatio(0);
+      }
+    }
+  };
+
   useEffect(() => {
     setPingAmountChange(depositAmount);
     validateDeposit();
+    calcNewCollRatio();
 
     if (address && chain && activeVault) {
       const borrowerOperationsAddress: Address =
@@ -359,9 +390,23 @@ const DepositPosition: React.FC<DepositPositionProps> = ({ activeVault, setPingA
             </p>
           </div>
         </div>
+
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
-          <p className="text-primaryColor">129% -{">"} 240%</p>
+          <p>
+            {positionStats.collateralRatio ? (
+              <span className="text-primaryColor">{`${positionStats.collateralRatio}%`}</span>
+            ) : (
+              "-"
+            )}
+
+            {newCollateralRatio ? (
+              <span className="text-[#C84D1E]">
+                {" -> "}
+                {`${newCollateralRatio}%`}
+              </span>
+            ) : null}
+          </p>
         </div>
         <div className="flex items-center justify-between gap-3">
           <p>Placeholder information</p>

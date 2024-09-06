@@ -22,14 +22,20 @@ import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
-import type { VaultType } from "@/types";
+import type { PositionStatsType, VaultType } from "@/types";
+import { formatDecimals } from "@/utils/formatters";
 
 interface MintPositionProps {
   activeVault: VaultType | undefined;
+  positionStats: PositionStatsType;
   setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
 
-const MintPosition: FC<MintPositionProps> = ({ activeVault }) => {
+const MintPosition: FC<MintPositionProps> = ({
+  activeVault,
+  positionStats,
+  setPingAmountChange,
+}) => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isPaused, isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
   const {
@@ -58,6 +64,7 @@ const MintPosition: FC<MintPositionProps> = ({ activeVault }) => {
   const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
+  const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
   // const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -285,8 +292,32 @@ const MintPosition: FC<MintPositionProps> = ({ activeVault }) => {
     checkUserLevelValidations();
   };
 
+  const calcNewCollRatio = () => {
+    if (activeVault) {
+      if (
+        mintAmount &&
+        mintAmount !== "" &&
+        priceInUSD &&
+        priceInUSD !== "" &&
+        priceInUSD !== "0"
+      ) {
+        const newDebtAmount = BigInt(troveDebt) + parseUnits(mintAmount, 18);
+        const collRatio =
+          ((BigInt(troveCollateralShares) * BigInt(priceInUSD)) / newDebtAmount) * 100n;
+
+        setNewCollateralRatio(
+          parseFloat(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2)),
+        );
+      } else {
+        setNewCollateralRatio(0);
+      }
+    }
+  };
+
   useEffect(() => {
+    setPingAmountChange(mintAmount);
     validateMint();
+    calcNewCollRatio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedMintAmount, isRecoveryMode]);
 
@@ -340,8 +371,19 @@ const MintPosition: FC<MintPositionProps> = ({ activeVault }) => {
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
-          <p className="text-primaryColor">
-            129% -{">"} <span className="text-[#C84D1E]"> 119%</span>
+          <p>
+            {positionStats.collateralRatio ? (
+              <span className="text-primaryColor">{`${positionStats.collateralRatio}%`}</span>
+            ) : (
+              "-"
+            )}
+
+            {newCollateralRatio ? (
+              <span className="text-[#C84D1E]">
+                {" -> "}
+                {`${newCollateralRatio}%`}
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="flex items-center justify-between gap-3">
