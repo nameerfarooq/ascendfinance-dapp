@@ -28,7 +28,7 @@ import {
   setCCR,
   setTCR,
   setGlobalSystemBalances,
-  setTroveCollateralTokens
+  setTroveCollateralTokens,
 } from "@/lib/features/protocol/protocolSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getDefaultChainId } from "@/utils/chain";
@@ -56,7 +56,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     fetchPriceInUsd,
     getTroveCollSharesAndDebt,
     getTroveOwnersCount,
-    convertSharesToYieldTokens
+    convertSharesToYieldTokens,
   } = useTroveManager();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -64,6 +64,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
 
   useWatchBlockNumber({
     chainId: chain?.id || defaultChainId,
+    pollingInterval: 6000,
     onBlockNumber(blockNumber) {
       dispatch(setLatestBlockNumber(blockNumber.toString()));
     },
@@ -136,11 +137,8 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
         dispatch(setTroveCollateralShares(result[0].toString()));
         dispatch(setTroveDebt(result[1].toString()));
-        convertSharesToYieldTokens(
-          troveManagerAddress,
-          BigInt(result[0]),
-        ).then((result) => {
-          dispatch(setTroveCollateralTokens(result.toString()))
+        convertSharesToYieldTokens(troveManagerAddress, BigInt(result[0])).then((result) => {
+          dispatch(setTroveCollateralTokens(result.toString()));
         });
       });
 
