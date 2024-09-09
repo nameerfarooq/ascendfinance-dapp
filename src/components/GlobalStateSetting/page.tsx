@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
 
 import type { Address } from "viem";
-import { useAccount, useWatchBlockNumber } from "wagmi";
+import { useAccount, useWatchBlockNumber, useWatchContractEvent } from "wagmi";
 
+import TroveManager_ABI from "@/abis/TroveManager.json";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import useAscendCore from "@/hooks/useAscendCore";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
@@ -62,6 +63,22 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const defaultChainId = getDefaultChainId(chain);
 
+  const [ascendCoreAddress, setAscendCoreAddress] = useState<Address>(
+    defaultChainId ? CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].ASCEND_CORE : "0x",
+  );
+  const [borrowerOperationsAddress, setBorrowerOperationsAddress] = useState<Address>(
+    defaultChainId
+      ? CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].BORROWER_OPERATIONS
+      : "0x",
+  );
+  const [troveManagerAddress, setTroveManagerAddress] = useState<Address>(
+    defaultChainId
+      ? CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].troves[
+          activeVault.token.address as Address
+        ].TROVE_MANAGER
+      : "0x",
+  );
+
   useWatchBlockNumber({
     chainId: chain?.id || defaultChainId,
     pollingInterval: 6000,
@@ -70,17 +87,70 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     },
   });
 
+  useWatchContractEvent({
+    address: troveManagerAddress,
+    abi: TroveManager_ABI.abi,
+    eventName: "TroveUpdated",
+    onLogs(logs) {
+      console.log("New logs!", logs);
+
+      if (isConnected && chain && address && activeVault) {
+        defaultedDebt(troveManagerAddress).then((result) => {
+          dispatch(setDefaultedDebt(result.toString()));
+        });
+
+        getTotalActiveDebt(troveManagerAddress).then((result) => {
+          dispatch(setTotalActiveDebt(result.toString()));
+        });
+
+        getTroveOwnersCount(troveManagerAddress).then((result) => {
+          dispatch(setTroveOwnersCount(result.toString()));
+        });
+
+        getTCR(borrowerOperationsAddress).then((result) => {
+          dispatch(setTCR(result.toString()));
+        });
+
+        getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
+          dispatch(
+            setGlobalSystemBalances({
+              totalPricedCollateral: result[0].toString(),
+              totalDebt: result[1].toString(),
+            }),
+          );
+        });
+      }
+    },
+    onError(error) {
+      console.log("useWatchContractEvent-TroveUpdated Error: ", error);
+    },
+  });
+
   useEffect(() => {
-    if (isConnected && chain && address && activeVault) {
-      const ascendCoreAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].ASCEND_CORE;
-      const troveManagerAddress: Address =
+    if (isConnected && chain && address && activeVault && activeVault) {
+      setAscendCoreAddress(
+        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].ASCEND_CORE,
+      );
+      setBorrowerOperationsAddress(
+        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS,
+      );
+      setTroveManagerAddress(
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
           activeVault.token.address as Address
-        ].TROVE_MANAGER;
-      const borrowerOperationsAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
+        ].TROVE_MANAGER,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, chain, address, activeVault]);
 
+  useEffect(() => {
+    if (
+      isConnected &&
+      chain &&
+      address &&
+      activeVault &&
+      ascendCoreAddress !== troveManagerAddress
+    ) {
       paused(ascendCoreAddress).then((result) => {
         dispatch(setIsPaused(!!result));
       });
@@ -119,29 +189,38 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, chain, address, activeVault]);
+  }, [
+    isConnected,
+    chain,
+    address,
+    activeVault,
+    ascendCoreAddress,
+    borrowerOperationsAddress,
+    troveManagerAddress,
+  ]);
 
   useEffect(() => {
-    if (isConnected && chain && address && activeVault) {
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[
-          activeVault.token.address as Address
-        ].TROVE_MANAGER;
-
-      const borrowerOperationsAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
+    if (
+      isConnected &&
+      chain &&
+      address &&
+      activeVault &&
+      ascendCoreAddress !== troveManagerAddress
+    ) {
+      // const borrowerOperationsAddress: Address =
+      //   CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId || chain?.id].BORROWER_OPERATIONS;
 
       fetchPriceInUsd(troveManagerAddress).then((result) => {
         dispatch(setPriceInUSD(result.toString()));
       });
 
-      defaultedDebt(troveManagerAddress).then((result) => {
-        dispatch(setDefaultedDebt(result.toString()));
-      });
+      // defaultedDebt(troveManagerAddress).then((result) => {
+      //   dispatch(setDefaultedDebt(result.toString()));
+      // });
 
-      getTotalActiveDebt(troveManagerAddress).then((result) => {
-        dispatch(setTotalActiveDebt(result.toString()));
-      });
+      // getTotalActiveDebt(troveManagerAddress).then((result) => {
+      //   dispatch(setTotalActiveDebt(result.toString()));
+      // });
 
       // getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
       //   dispatch(setTroveCollateralShares(result[0].toString()));
@@ -151,28 +230,28 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       //   });
       // });
 
-      getTroveOwnersCount(troveManagerAddress).then((result) => {
-        dispatch(setTroveOwnersCount(result.toString()));
-      });
+      // getTroveOwnersCount(troveManagerAddress).then((result) => {
+      //   dispatch(setTroveOwnersCount(result.toString()));
+      // });
 
-      getTCR(borrowerOperationsAddress).then((result) => {
-        dispatch(setTCR(result.toString()));
-      });
+      // getTCR(borrowerOperationsAddress).then((result) => {
+      //   dispatch(setTCR(result.toString()));
+      // });
 
-      getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
-        dispatch(
-          setGlobalSystemBalances({
-            totalPricedCollateral: result[0].toString(),
-            totalDebt: result[1].toString(),
-          }),
-        );
-      });
+      // getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
+      //   dispatch(
+      //     setGlobalSystemBalances({
+      //       totalPricedCollateral: result[0].toString(),
+      //       totalDebt: result[1].toString(),
+      //     }),
+      //   );
+      // });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, chain, address, activeVault, latestBlockNumber]);
+  }, [isConnected, chain, address, activeVault, latestBlockNumber, troveManagerAddress]);
 
   useEffect(() => {
-    if (isConnected && chain && address) {
+    if (isConnected && chain && address && ascendCoreAddress !== troveManagerAddress) {
       const isRecovery: boolean = BigInt(TCR_value) < BigInt(CCR_value);
       dispatch(setIsRecoveryMode(isRecovery));
     }
