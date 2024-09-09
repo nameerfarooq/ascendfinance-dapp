@@ -115,7 +115,7 @@ export const useERC20Contract = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
 
           if (tx?.status === "success") {

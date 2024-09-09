@@ -78,9 +78,7 @@ export const useBorrowerOperations = (): {
   minNetDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
   CCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
   getTCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
-  getGlobalSystemBalances: (
-    borrowerOperationsAddress: Address,
-  ) => Promise<bigint[]>;
+  getGlobalSystemBalances: (borrowerOperationsAddress: Address) => Promise<bigint[]>;
 } => {
   const { isConnected, address } = useAccount();
   const dispatch = useDispatch();
@@ -142,7 +140,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx) {
             dispatch(
@@ -210,7 +208,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx?.status === "success") {
             dispatch(setLoader({ condition: "success", text1: "Repayed", text2: "GREEN" }));
@@ -272,7 +270,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx?.status === "success") {
             dispatch(
@@ -352,7 +350,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx?.status === "success") {
             dispatch(
@@ -431,7 +429,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx?.status === "success") {
             dispatch(
@@ -519,7 +517,7 @@ export const useBorrowerOperations = (): {
 
           console.log("hash: ", hash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash });
+          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
           console.log("tx: ", tx);
           if (tx?.status === "success") {
             dispatch(
@@ -633,9 +631,7 @@ export const useBorrowerOperations = (): {
   );
 
   const getGlobalSystemBalances = useCallback(
-    async (
-      borrowerOperationsAddress: Address,
-    ): Promise<bigint[]> => {
+    async (borrowerOperationsAddress: Address): Promise<bigint[]> => {
       const defaultValue = [0n, 0n];
 
       try {
