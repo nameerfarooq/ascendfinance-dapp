@@ -46,11 +46,12 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
 
   const [zap, setZap] = useState<0 | 1 | 2>(0);
   const [depositAmount, setDepositAmount] = useState<string>("");
-  const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
+  const [tokenBalance, setTokenBalance] = useState("");
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [depositerror, setDepositError] = useState<string>("");
   const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
+  const [btnLoading, setbtnLoading] = useState(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedDepositAmount = useDebounce(depositAmount, 350);
@@ -58,7 +59,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
       balanceOf(tokenAddress, walletAddress).then((balance) => {
-        setTokenBalance(balance);
+        setTokenBalance(balance.toString());
       });
     }
   };
@@ -99,7 +100,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
 
   const setDepositToMax = () => {
     if (activeVault) {
-      const maxDepositAmount = formatUnits(tokenBalance, activeVault.token.decimals);
+      const maxDepositAmount = formatUnits(BigInt(tokenBalance), activeVault.token.decimals);
       setDepositAmount(maxDepositAmount);
     }
   };
@@ -112,6 +113,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
     amount: bigint,
   ) => {
     try {
+      setbtnLoading(true)
       if (address && activeVault) {
         dispatch(
           setLoader({
@@ -189,7 +191,11 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
         });
         console.log("tx: ", tx);
       }
+      setbtnLoading(false)
+
     } catch (error) {
+      setbtnLoading(false)
+
       if (activeVault) {
         dispatch(
           setLoader({
@@ -236,6 +242,8 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   };
 
   const validateDeposit = () => {
+    setbtnLoading(true)
+
     if (isPaused || isVMPaused || isSunSetting) {
       setIsDepositValid(false);
       return;
@@ -253,13 +261,15 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
     } else if (parseFloat(depositAmount) <= 0) {
       setIsDepositValid(false);
       setDepositError("Deposit amount must be greater than 0");
-    } else if (amount > 0n && amount <= tokenBalance) {
+    } else if (amount > 0n && amount <= BigInt(tokenBalance)) {
       setIsDepositValid(true);
       setDepositError("");
-    } else if (amount > 0n && amount > tokenBalance) {
+    } else if (amount > 0n && amount > BigInt(tokenBalance)) {
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
     }
+    setbtnLoading(false)
+ 
   };
 
   const calcNewCollRatio = () => {
@@ -352,9 +362,11 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-            <button type="button" onClick={setDepositToMax} className="font-bold">
-              Max
-            </button>
+            {tokenBalance &&
+              <button type="button" onClick={setDepositToMax} className="font-bold">
+                Max
+              </button>
+            }
           </div>
         </div>
         {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
@@ -416,9 +428,10 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
 
       <div>
         <ButtonStyle1
-          disabled={!isConnected || !isDepositValid}
+          disabled={!isConnected || !isDepositValid || btnLoading}
           text={`${!isAllowanceEnough ? "Approve" : "Deposit"} ${activeVault?.token.symbol}`}
           action={handleCtaFunctions}
+          btnLoading={btnLoading}
         />
       </div>
     </div>

@@ -14,6 +14,7 @@ interface TroveState {
   totalActiveDebt: string;
   MCR_value: string;
   troveCollateralShares: string;
+  troveCollateralTokens: string;
   troveDebt: string;
   troveOwnersCount: string;
 }
@@ -52,6 +53,7 @@ const initialState: ProtocolSliceState = {
     totalActiveDebt: "0",
     MCR_value: "0",
     troveCollateralShares: "0",
+    troveCollateralTokens: "0",
     troveDebt: "0",
     troveOwnersCount: "0",
   },
@@ -112,6 +114,9 @@ export const protocolSlice = createSlice({
     setTroveCollateralShares: (state, action: PayloadAction<string>) => {
       state.trove.troveCollateralShares = action.payload;
     },
+    setTroveCollateralTokens: (state, action: PayloadAction<string>) => {
+      state.trove.troveCollateralTokens = action.payload;
+    },
     setTroveDebt: (state, action: PayloadAction<string>) => {
       state.trove.troveDebt = action.payload;
     },
@@ -157,6 +162,7 @@ export const {
   setTotalActiveDebt,
   setMCR,
   setTroveCollateralShares,
+  setTroveCollateralTokens,
   setTroveDebt,
   setTroveOwnersCount,
   // Borrower Operations Related

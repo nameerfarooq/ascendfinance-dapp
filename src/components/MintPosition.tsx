@@ -44,7 +44,7 @@ const MintPosition: FC<MintPositionProps> = ({
     MCR_value,
     troveCollateralShares,
     troveDebt,
-    troveOwnersCount,
+    troveOwnersCount,troveCollateralTokens
   } = useAppSelector((state) => state.protocol.trove);
   const { CCR_value, globalSystemBalances } = useAppSelector((state) => state.protocol.borrowerOp);
 
@@ -55,17 +55,19 @@ const MintPosition: FC<MintPositionProps> = ({
     convertSharesToYieldTokens,
     // fetchPriceInUsd,
     // MCR,
+
   } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { withdrawDebt } = useBorrowerOperations();
   const dispatch = useDispatch();
   const [mintAmount, setMintAmount] = useState<string>("");
-  const [maxMintableAmount, setMaxMintableAmount] = useState<bigint>(0n);
+  const [maxMintableAmount, setMaxMintableAmount] = useState("");
   const [isMintValid, setIsMintValid] = useState<boolean>(false);
   const [minterror, setMintError] = useState<string>("");
   const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
   // const [tokenPrice_USD, setTokenPrice_USD] = useState<bigint>(0n);
+  const [btnLoading, setbtnLoading] = useState(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const debouncedMintAmount = useDebounce(mintAmount, 350);
@@ -76,7 +78,7 @@ const MintPosition: FC<MintPositionProps> = ({
   };
 
   const setMintToMax = () => {
-    const maxMintAmount = formatUnits(maxMintableAmount, 18);
+    const maxMintAmount = formatUnits(BigInt(maxMintableAmount), 18);
     setMintAmount(maxMintAmount);
   };
 
@@ -88,6 +90,7 @@ const MintPosition: FC<MintPositionProps> = ({
     amount: bigint,
   ) => {
     try {
+      setbtnLoading(true)
       if (activeVault) {
         dispatch(
           setLoader({
@@ -157,7 +160,11 @@ const MintPosition: FC<MintPositionProps> = ({
         });
         console.log("tx: ", tx);
       }
+      setbtnLoading(false)
+
     } catch (error) {
+      setbtnLoading(false)
+
       if (activeVault) {
         dispatch(
           setLoader({
@@ -220,15 +227,15 @@ const MintPosition: FC<MintPositionProps> = ({
       // 5) Calculate Max & Additional Debt
       const maxDebtAllowed = (priceInUSD * yieldTokens) / minCollateralRatio;
       const additionalDebtAllowed = maxDebtAllowed - BigInt(troveDebt);
-      setMaxMintableAmount(additionalDebtAllowed);
+      setMaxMintableAmount(additionalDebtAllowed.toString());
     }
   };
 
   const checkUserLevelValidations = async () => {
     if (isConnected && address && chain && activeVault) {
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-          .TROVE_MANAGER;
+      // const troveManagerAddress: Address =
+      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+      //     .TROVE_MANAGER;
 
       const amount = parseUnits(mintAmount || "0", 18);
 
@@ -236,16 +243,16 @@ const MintPosition: FC<MintPositionProps> = ({
       // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(troveManagerAddress, address);
 
       // 2) Convert Shares to Yield token
-      const yieldTokens = await convertSharesToYieldTokens(
-        troveManagerAddress,
-        BigInt(troveCollateralShares),
-      );
+      // const yieldTokens = await convertSharesToYieldTokens(
+      //   troveManagerAddress,
+      //   BigInt(troveCollateralShares),
+      // );
 
       // 3) Calculate User Debt
       const totalUserDebt = BigInt(troveDebt) + amount;
 
       // 4) Calculate Collateral Ratio
-      const userICR = (yieldTokens * BigInt(priceInUSD)) / totalUserDebt;
+      const userICR = (BigInt(troveCollateralTokens) * BigInt(priceInUSD)) / totalUserDebt;
 
       // 5) Calculate Total Collateral Ratio
       const newTotalDebt = BigInt(globalSystemBalances.totalDebt) + amount;
@@ -261,9 +268,13 @@ const MintPosition: FC<MintPositionProps> = ({
         setMintError("Your Position will cause the GTCR to drop below CCR");
       }
     }
+    setbtnLoading(false)
+
   };
 
   const validateMint = async () => {
+    setbtnLoading(true)
+
     if (isPaused || isVMPaused || isSunSetting) {
       setIsMintValid(false);
       return;
@@ -281,10 +292,10 @@ const MintPosition: FC<MintPositionProps> = ({
     } else if (parseFloat(mintAmount) <= 0) {
       setIsMintValid(false);
       setMintError("Desired mint value must be greater than 0");
-    } else if (amount > 0n && amount <= maxMintableAmount) {
+    } else if (amount > 0n && amount <= BigInt(maxMintableAmount)) {
       setIsMintValid(true);
       setMintError("");
-    } else if (amount > 0n && amount > maxMintableAmount) {
+    } else if (amount > 0n && amount > BigInt(maxMintableAmount)) {
       setIsMintValid(false);
       setMintError("Desired mint value is greater than tokens available for mint");
     }
@@ -316,6 +327,7 @@ const MintPosition: FC<MintPositionProps> = ({
 
   useEffect(() => {
     setPingAmountChange(mintAmount);
+
     validateMint();
     calcNewCollRatio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -344,9 +356,11 @@ const MintPosition: FC<MintPositionProps> = ({
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-            <button type="button" onClick={setMintToMax} className="font-bold">
-              Max
-            </button>
+            {maxMintableAmount &&
+              <button type="button" onClick={setMintToMax} className="font-bold">
+                Max
+              </button>
+            }
           </div>
         </div>
         {mintAmount !== "" && minterror && <p className="text-[#FF5710] mt-4">{minterror}</p>}
@@ -394,9 +408,10 @@ const MintPosition: FC<MintPositionProps> = ({
 
       <div>
         <ButtonStyle1
-          disabled={!isConnected || !isMintValid}
+          disabled={!isConnected || !isMintValid || btnLoading}
           text="Mint"
           action={handleCtaFunctions}
+          btnLoading={btnLoading}
         />
       </div>
     </div>
