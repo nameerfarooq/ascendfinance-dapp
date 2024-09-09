@@ -49,7 +49,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
   const [isWithdrawValid, setisWithdrawValid] = useState(false);
   const [error, setError] = useState("");
-  const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState(0n);
+  const [alreadyDepositedTokens, setAlreadyDepositedTokens] = useState('');
   const dispatch = useDispatch();
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
@@ -57,7 +57,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   const { globalSystemBalances, CCR_value, TCR_value } = useAppSelector(
     (state) => state.protocol.borrowerOp,
   );
-  const { MCR_value, troveCollateralShares, troveDebt, troveOwnersCount } = useAppSelector(
+  const { MCR_value, troveCollateralShares, troveCollateralTokens, troveDebt, troveOwnersCount } = useAppSelector(
     (state) => state.protocol.trove,
   );
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([]);
@@ -68,19 +68,19 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   useEffect(() => {
     const calcRatios = async () => {
       if (address && chain && activeVault) {
-        const troveManagerAddress: Address =
-          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-            .TROVE_MANAGER;
+        // const troveManagerAddress: Address =
+        //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+        //     .TROVE_MANAGER;
 
-        const existingSharesInTokens = await convertSharesToYieldTokens(
-          troveManagerAddress,
-          existingSharesAndDebt[0],
-        );
+        // const existingSharesInTokens = await convertSharesToYieldTokens(
+        //   troveManagerAddress,
+        //   existingSharesAndDebt[0],
+        // );
         const tokensTobeWithdrawn = parseUnits(
           debouncedwithdrawAmount,
           activeVault?.token?.decimals,
         );
-        const newCollAmount = existingSharesInTokens - tokensTobeWithdrawn;
+        const newCollAmount = BigInt(troveCollateralTokens) - tokensTobeWithdrawn;
         // const priceInUsd = await fetchPriceInUsd(troveManagerAddress)
         // setpriceInUSD(priceInUsd)
 
@@ -104,7 +104,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
 
   const setInputValueMax = async () => {
     if (activeVault) {
-      setwithdrawAmount(formatUnits(alreadyDepositedTokens, activeVault.token.decimals));
+      setwithdrawAmount(formatUnits(BigInt(alreadyDepositedTokens), activeVault.token.decimals));
     }
   };
 
@@ -315,7 +315,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         if (isRecoveryMode) {
           setisWithdrawValid(false);
           setError("Collateral withdrawal not permitted during Recovery Mode");
-        } else if (withdrawAmountInWei > alreadyDepositedTokens) {
+        } else if (withdrawAmountInWei > BigInt(alreadyDepositedTokens)) {
           setisWithdrawValid(false);
           setError("Your desired withdraw amount is greater than deposited token");
         } else if (userICR < BigInt(MCR_value)) {
@@ -358,7 +358,10 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
           troveManagerAddress,
           BigInt(troveCollateralShares),
         );
-        setAlreadyDepositedTokens(depositedTokens);
+        setAlreadyDepositedTokens(depositedTokens.toString());
+      } else {
+        setAlreadyDepositedTokens("");
+
       }
     };
     getAlreadyDepositedTokens();
@@ -380,9 +383,11 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-            <button onClick={setInputValueMax} className="font-bold">
-              Max
-            </button>
+            {alreadyDepositedTokens &&
+              <button onClick={setInputValueMax} className="font-bold">
+                Max
+              </button>
+            }
           </div>
         </div>
         <div className="h-[20px] flex items-center">

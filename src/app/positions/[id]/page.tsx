@@ -271,7 +271,8 @@ const Page = ({ params }: { params: { id: string } }) => {
             />
           )}
           {tab === 3 && (
-            <RepayPosition activeVault={activeVault} setPingAmountChange={setPingAmountChange} />
+            <RepayPosition activeVault={activeVault} setPingAmountChange={setPingAmountChange} collateralRatio={positionStats?.collateralRatio}
+            />
           )}
         </div>
       </div>

@@ -24,14 +24,15 @@ import { formatDecimals } from "@/utils/formatters";
 interface RepayPositionProps {
   activeVault: VaultType | undefined;
   setPingAmountChange: Dispatch<SetStateAction<string>>;
+  collateralRatio: string
 }
-const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
+const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRatio }) => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
   const { CCR_value, globalSystemBalances, minNetDebt } = useAppSelector(
     (state) => state.protocol.borrowerOp,
   );
-  const { troveCollateralShares, troveDebt, troveOwnersCount } = useAppSelector(
+  const { troveCollateralShares, troveCollateralTokens, troveDebt, troveOwnersCount } = useAppSelector(
     (state) => state.protocol.trove,
   );
 
@@ -51,15 +52,16 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const defaultChainId = getDefaultChainId(chain);
+  const [btnLoading, setbtnLoading] = useState(false);
 
   const [repayAmount, setRepayAmount] = useState<string>("");
   const [isValidated, setIsValidated] = useState(false);
-  const [alreadyMintedDebt, setAlreadyMintedDebt] = useState(0n);
+  const [alreadyMintedDebt, setAlreadyMintedDebt] = useState('');
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   const [tokenBalance, setTokenBalance] = useState<bigint>(0n);
   const [isPositionClosing, setIsPositionClosing] = useState<boolean>(false);
-
+  const [newCollateralRatio, setNewCollateralRatio] = useState('')
   const debouncedRepayAmount = useDebounce(repayAmount, 350);
 
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
@@ -78,7 +80,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
   const setRepayToMax = () => {
     if (activeVault) {
       console.log("alreadyMintedDebt.toString() :", alreadyMintedDebt.toString());
-      setRepayAmount(formatUnits(alreadyMintedDebt, activeVault.token.decimals));
+      setRepayAmount(formatUnits(BigInt(alreadyMintedDebt), activeVault.token.decimals));
     }
   };
 
@@ -205,7 +207,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
           .SORTED_TROVES;
       const deboundedInBigInt = parseUnits(debouncedRepayAmount, activeVault.token.decimals);
-      if (deboundedInBigInt === alreadyMintedDebt) {
+      if (deboundedInBigInt === BigInt(alreadyMintedDebt)) {
         closePosition(borrowerOperationsAddress, troveManagerAddress, address);
       } else {
         getTokenRepayed(
@@ -265,6 +267,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             setError("Your Position will cause the GTCR to drop below CCR");
             setWarning("");
             setIsValidated(false);
+
           }
         } else {
           setError("");
@@ -272,11 +275,42 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             "Your desired repay amount is equal to minted token, Your position will be closed if you proceed",
           );
           setIsValidated(true);
+
         }
       }
     }
-  };
+    setbtnLoading(false)
 
+  };
+  const calcNewCollRatio = () => {
+    if (activeVault) {
+      if (
+        repayAmount &&
+        repayAmount !== "" &&
+        priceInUSD &&
+        priceInUSD !== "" &&
+        priceInUSD !== "0"
+      ) {
+        const newDebtAmount = BigInt(troveDebt) - parseUnits(debouncedRepayAmount, 18);
+        if (newDebtAmount > 0n) {
+          const collRatio =
+            ((BigInt(troveCollateralTokens) * BigInt(priceInUSD)) / newDebtAmount) * 100n;
+          setNewCollateralRatio(
+            parseFloat(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2)).toString()
+          );
+        } else {
+          setNewCollateralRatio("0");
+        }
+      } else {
+        setNewCollateralRatio("");
+      }
+    }
+  };
+  useEffect(() => {
+    if (repayAmount > "0") {
+      calcNewCollRatio()
+    }
+  }, [debouncedRepayAmount, isRecoveryMode])
   useEffect(() => {
     const getAlreadyMintedDebt = async () => {
       if (address && chain && activeVault) {
@@ -295,7 +329,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
           BigInt(troveDebt),
         );
 
-        setAlreadyMintedDebt(mintedTokens);
+        setAlreadyMintedDebt(mintedTokens.toString());
       }
     };
     getAlreadyMintedDebt();
@@ -310,6 +344,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
 
   useEffect(() => {
     const getValidate = async () => {
+      setbtnLoading(true)
       if (address && chain && activeVault && repayAmount) {
         const repayAmountLocal = parseUnits(debouncedRepayAmount, activeVault.token.decimals);
 
@@ -319,11 +354,11 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
           setIsValidated(false);
           setError("Your desired Repay amount should be greater than 0");
           setWarning("");
-        } else if (repayAmountLocal > alreadyMintedDebt) {
+        } else if (repayAmountLocal > BigInt(alreadyMintedDebt)) {
           setIsValidated(false);
           setError("Your desired repay amount is greater than minted token");
           setWarning("");
-        } else if (repayAmountLocal === alreadyMintedDebt) {
+        } else if (repayAmountLocal === BigInt(alreadyMintedDebt)) {
           setWarning(
             "Your desired repay amount is equal to minted token, Your position will be closed if you proceed",
           );
@@ -335,10 +370,12 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
           setWarning("");
           setError("");
         }
+
       } else {
         setIsValidated(true);
         setWarning("");
         setError("");
+
       }
 
       userLevelChecks();
@@ -362,9 +399,11 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-            <button onClick={setRepayToMax} className="font-bold">
-              Max
-            </button>
+            {alreadyMintedDebt &&
+              <button onClick={setRepayToMax} className="font-bold">
+                Max
+              </button>
+            }
           </div>
         </div>
         <div className="h-[20px] flex items-center">
@@ -382,7 +421,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
-          <p className="text-primaryColor">129% -{">"} 140%</p>
+          <p className="text-primaryColor">{collateralRatio}% {newCollateralRatio && <span> -{">"} {newCollateralRatio}%</span>}</p>
         </div>
         <div className="flex items-center justify-between gap-3">
           <p>Placeholder information</p>
@@ -390,7 +429,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault }) => {
         </div>
       </div>
       <div>
-        <ButtonStyle1 disabled={!isValidated} action={handleCtaFunctions} text="Repay" />
+        <ButtonStyle1 disabled={!isValidated || btnLoading} action={handleCtaFunctions} text="Repay" btnLoading={btnLoading} />
       </div>
     </div>
   );
