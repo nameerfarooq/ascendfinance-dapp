@@ -101,6 +101,15 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
         dispatch(setMCR(result.toString()));
       });
 
+      getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
+        dispatch(setTroveCollateralShares(result[0].toString()));
+        dispatch(setTroveDebt(result[1].toString()));
+
+        convertSharesToYieldTokens(troveManagerAddress, BigInt(result[0])).then((result) => {
+          dispatch(setTroveCollateralTokens(result.toString()));
+        });
+      });
+
       minNetDebt(borrowerOperationsAddress).then((result) => {
         dispatch(setMinNetDebt(result.toString()));
       });
@@ -134,13 +143,13 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
         dispatch(setTotalActiveDebt(result.toString()));
       });
 
-      getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
-        dispatch(setTroveCollateralShares(result[0].toString()));
-        dispatch(setTroveDebt(result[1].toString()));
-        convertSharesToYieldTokens(troveManagerAddress, BigInt(result[0])).then((result) => {
-          dispatch(setTroveCollateralTokens(result.toString()));
-        });
-      });
+      // getTroveCollSharesAndDebt(troveManagerAddress, address).then((result) => {
+      //   dispatch(setTroveCollateralShares(result[0].toString()));
+      //   dispatch(setTroveDebt(result[1].toString()));
+      //   convertSharesToYieldTokens(troveManagerAddress, BigInt(result[0])).then((result) => {
+      //     dispatch(setTroveCollateralTokens(result.toString()));
+      //   });
+      // });
 
       getTroveOwnersCount(troveManagerAddress).then((result) => {
         dispatch(setTroveOwnersCount(result.toString()));

@@ -50,11 +50,13 @@ const connectors = connectorsForWallets(
 );
 
 const transportChain = appBuildEnvironment === "PROD" ? mainnet : sepolia;
-const transports: Record<number, Transport> = { [transportChain.id]: http() };
+const rpcUrl = transportChain.rpcUrls.default.http[0]
+const transports: Record<number, Transport> = { [transportChain.id]: http(rpcUrl) };
 
 export const wagmiConfig = createConfig({
   chains: [transportChain],
   connectors,
   transports,
   ssr: true,
+  pollingInterval: 6000
 });
