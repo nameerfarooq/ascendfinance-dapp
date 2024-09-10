@@ -39,7 +39,7 @@ const Page = () => {
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
-  const defaultChainId = getDefaultChainId(chain);
+  const defaultChainId: number = getDefaultChainId(chain);
 
   const managePosition = (vaultId: string) => {
     if (isConnected && isAddress(vaultId)) {

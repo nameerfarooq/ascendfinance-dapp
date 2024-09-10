@@ -27,7 +27,7 @@ const VaultsPage = () => {
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
-  const defaultChainId = getDefaultChainId(chain);
+  const defaultChainId: number = getDefaultChainId(chain);
 
   const [vaultStatusList, setVaultStatusList] = useState<{ [x: string]: bigint }>({});
   const [loading, setLoading] = useState<boolean>(true);

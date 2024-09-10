@@ -6,7 +6,7 @@ import { getDefaultChainId } from "@/utils/chain";
 
 const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
 const nativeVaultsList = vaultsList[appBuildEnvironment];
-const defaultChainId = getDefaultChainId(undefined);
+const defaultChainId: number = getDefaultChainId(undefined);
 
 const defaultVault =
   nativeVaultsList[defaultChainId][Object.keys(nativeVaultsList[defaultChainId])[0]];

@@ -61,7 +61,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   } = useTroveManager();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const defaultChainId = getDefaultChainId(chain);
+  const defaultChainId: number = getDefaultChainId(chain);
 
   const [ascendCoreAddress, setAscendCoreAddress] = useState<Address>(
     defaultChainId ? CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].ASCEND_CORE : "0x",

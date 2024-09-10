@@ -51,7 +51,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
   const { repayDebt, closeTrove } = useBorrowerOperations();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const defaultChainId = getDefaultChainId(chain);
+  const defaultChainId: number = getDefaultChainId(chain);
   const [btnLoading, setbtnLoading] = useState(false);
 
   const [repayAmount, setRepayAmount] = useState<string>("");
