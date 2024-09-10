@@ -392,7 +392,7 @@ const MintPosition: FC<MintPositionProps> = ({
               "-"
             )}
 
-            {newCollateralRatio ? (
+            {newCollateralRatio && !minterror? (
               <span className="text-[#C84D1E]">
                 {" -> "}
                 {`${newCollateralRatio}%`}

@@ -421,7 +421,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
       <div className="text-[12px] text-lightGray font-medium leading-[24px]">
         <div className="flex items-center justify-between gap-3">
           <p>Collateral ratio change</p>
-          <p className="text-primaryColor">{collateralRatio}% {newCollateralRatio && <span> -{">"} {newCollateralRatio}%</span>}</p>
+          <p className="text-primaryColor">{collateralRatio}% {newCollateralRatio && !error && <span> -{">"} {newCollateralRatio}%</span>}</p>
         </div>
         <div className="flex items-center justify-between gap-3">
           <p>Placeholder information</p>

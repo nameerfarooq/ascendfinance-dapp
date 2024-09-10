@@ -400,7 +400,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
           <p>Collateral ratio change</p>
           <p className="text-primaryColor">
             {collateralRatio}%{" "}
-            {newCollRatio && (
+            {newCollRatio && !error && (
               <span>
                 -{">"}{" "}
                 <span className="text-[#C84D1E]"> {formatDecimals(Number(newCollRatio), 2)}%</span>

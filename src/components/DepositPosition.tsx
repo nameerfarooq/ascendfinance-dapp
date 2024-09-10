@@ -412,7 +412,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
               "-"
             )}
 
-            {newCollateralRatio ? (
+            {newCollateralRatio && !depositerror ?  (
               <span className="text-[#C84D1E]">
                 {" -> "}
                 {`${newCollateralRatio}%`}
