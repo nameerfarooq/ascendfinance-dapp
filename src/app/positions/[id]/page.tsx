@@ -43,7 +43,6 @@ const Page = ({ params }: { params: { id: string } }) => {
   const dispatch = useAppDispatch();
   const { isConnected, address, chain } = useAccount();
   const {
-    // getTroveCollSharesAndDebt,
     convertSharesToYieldTokens,
     getCurrentICR,
   } = useTroveManager();
@@ -53,27 +52,10 @@ const Page = ({ params }: { params: { id: string } }) => {
   const [activeVault, setActiveVaultState] = useState<VaultType>();
   const [positionStats, setPositionStats] = useState<PositionStatsType>(initialPositionStats);
   const [pingAmountChange, setPingAmountChange] = useState<string>("0");
-  // const [multipleSortedTroves, setMultipleSortedTroves] = useState<CombinedTroveDataType[]>([]);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId: number = getDefaultChainId(chain);
-
-  // const getTrovePositionIndex = (): number => {
-  //   let position = 0;
-  //   if (multipleSortedTroves.length) {
-  //     for (let i = 0; i < multipleSortedTroves.length; i++) {
-  //       if (multipleSortedTroves[i].owner === address) {
-  //         position = i;
-  //         break;
-  //       }
-  //     }
-  //   }
-
-  //   return position;
-  // };
-
-  // const position = useMemo(getTrovePositionIndex, [address, multipleSortedTroves]);
 
   const getSinglePositionStats = async (
     vaultId: Address,
@@ -147,7 +129,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, chain, params, pingAmountChange]);
+  }, [isConnected, address, chain, params, pingAmountChange, defaultChainId, troveCollateralShares, troveOwnersCount]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">

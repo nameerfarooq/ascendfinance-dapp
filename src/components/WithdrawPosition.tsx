@@ -283,17 +283,17 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         //step 9
 
         const totalPricedCollateral = globalSystemBalances.totalPricedCollateral;
-        console.log(
-          "totalPricedCollateral : ",
-          BigInt(totalPricedCollateral) / 1000000000000000000n,
-        );
-        console.log(
-          "totalPricedCollateral converted",
-          formatUnits(
-            BigInt(totalPricedCollateral) / 1000000000000000000n,
-            activeVault.token.decimals,
-          ),
-        );
+        // console.log(
+        //   "totalPricedCollateral : ",
+        //   BigInt(totalPricedCollateral) / 1000000000000000000n,
+        // );
+        // console.log(
+        //   "totalPricedCollateral converted",
+        //   formatUnits(
+        //     BigInt(totalPricedCollateral) / 1000000000000000000n,
+        //     activeVault.token.decimals,
+        //   ),
+        // );
         //step 11
 
         // const priceInUSD = await fetchPriceInUsd(troveManagerAddress);

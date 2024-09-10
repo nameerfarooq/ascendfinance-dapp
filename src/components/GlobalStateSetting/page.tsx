@@ -90,6 +90,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
   useWatchContractEvent({
     address: troveManagerAddress,
     abi: TroveManager_ABI.abi,
+    chainId: defaultChainId,
     eventName: "TroveUpdated",
     onLogs(logs) {
       console.log("New logs!", logs);
