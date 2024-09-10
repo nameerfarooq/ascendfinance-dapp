@@ -187,6 +187,38 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       CCR(borrowerOperationsAddress).then((result) => {
         dispatch(setCCR(result.toString()));
       });
+
+      // -----------------------------------------------------------------------
+      // Below Functions Are Also Called When Trove Update Event Is Called
+      // Calling Here For First Time Render
+      // -----------------------------------------------------------------------
+      defaultedDebt(troveManagerAddress).then((result) => {
+        dispatch(setDefaultedDebt(result.toString()));
+      });
+
+      getTotalActiveDebt(troveManagerAddress).then((result) => {
+        dispatch(setTotalActiveDebt(result.toString()));
+      });
+
+      getTroveOwnersCount(troveManagerAddress).then((result) => {
+        dispatch(setTroveOwnersCount(result.toString()));
+      });
+
+      getTCR(borrowerOperationsAddress).then((result) => {
+        dispatch(setTCR(result.toString()));
+      });
+
+      getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
+        dispatch(
+          setGlobalSystemBalances({
+            totalPricedCollateral: result[0].toString(),
+            totalDebt: result[1].toString(),
+          }),
+        );
+      });
+      // -----------------------------------------------------------------------
+      // End
+      // -----------------------------------------------------------------------
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
