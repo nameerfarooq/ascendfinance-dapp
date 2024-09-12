@@ -1,6 +1,6 @@
 "use client";
 
-import { connectorsForWallets } from "@rainbow-me/rainbowkit";
+import { connectorsForWallets, type Chain } from "@rainbow-me/rainbowkit";
 import {
   argentWallet,
   coinbaseWallet,
@@ -12,7 +12,7 @@ import {
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import type { Transport } from "viem";
-import { createConfig, http } from "wagmi";
+import { createConfig, http, cookieStorage, createStorage, fallback } from "wagmi";
 import { mainnet, sepolia } from "wagmi/chains";
 
 const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT || "DEV";
@@ -49,14 +49,50 @@ const connectors = connectorsForWallets(
   { appName: "Ascend Finance", projectId: walletConnectProjectId },
 );
 
-const transportChain = appBuildEnvironment === "PROD" ? mainnet : sepolia;
-const rpcUrl = transportChain.rpcUrls.default.http[0]
-const transports: Record<number, Transport> = { [transportChain.id]: http(rpcUrl) };
+const transportChain: Chain = appBuildEnvironment === "PROD" ? mainnet : sepolia;
+const rpcUrl = transportChain.rpcUrls.default.http[0];
+const transports: Record<number, Transport> = {
+  [transportChain.id]: fallback([
+    http(
+      transportChain.id === 11155111
+        ? `https://sepolia.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`
+        : `https://mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_KEY}`,
+    ),
+    http(rpcUrl),
+    http(),
+  ]),
+};
+
+// export const config = getDefaultConfig({
+//   appName: "ascendfinance-frontend",
+//   projectId: walletConnectProjectId,
+//   chains: [transportChain],
+//   ssr: true,
+//   storage: createStorage({
+//     storage: cookieStorage,
+//   }),
+//   transports,
+// });
 
 export const wagmiConfig = createConfig({
   chains: [transportChain],
   connectors,
-  transports,
   ssr: true,
-  pollingInterval: 6000
+  storage: createStorage({
+    storage: cookieStorage,
+  }),
+  transports,
+  pollingInterval: 6000,
 });
+
+// export function getConfig() {
+//   return createConfig({
+//     chains: [transportChain],
+//     connectors,
+//     ssr: true,
+//     storage: createStorage({
+//       storage: cookieStorage,
+//     }),
+//     transports,
+//   });
+// }

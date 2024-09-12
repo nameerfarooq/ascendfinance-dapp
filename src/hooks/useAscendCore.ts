@@ -1,24 +1,21 @@
 import { useCallback } from "react";
 
 import { type Address } from "viem";
-import { readContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import AscendCore_ABI from "@/abis/AscendCore.json";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useAscendCore = (): {
   paused: (ascendCoreAddress: Address) => Promise<boolean | undefined>;
 } => {
-  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { isConnected, chain, address } = useAccount();
 
   const paused = useCallback(
     async (ascendCoreAddress: Address): Promise<boolean | undefined> => {
       try {
-        if (isConnected && address && publicClient) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient) {
+          const result = await publicClient.readContract({
             abi: AscendCore_ABI.abi,
             account: address,
             address: ascendCoreAddress,
@@ -32,7 +29,7 @@ export const useAscendCore = (): {
         console.log("paused(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   return {

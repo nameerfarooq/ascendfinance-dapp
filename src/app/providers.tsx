@@ -1,22 +1,24 @@
 "use client";
 
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState } from "react";
 
 import { CacheProvider } from "@chakra-ui/next-js";
 import { extendTheme, ChakraProvider } from "@chakra-ui/react";
-import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
+import { WagmiProvider, cookieToInitialState } from "wagmi";
 
 import StoreProvider from "@/app/StoreProvider";
 import { wagmiConfig } from "@/wagmi";
 
-export function Providers({ children }: Readonly<{ children: ReactNode }>) {
-  const [mounted, setMounted] = useState(false);
+type Props = {
+  children: ReactNode;
+  cookie?: string | null;
+};
 
-  useEffect(() => setMounted(true), []);
-
-  const queryClient = new QueryClient();
+export function Providers({ children, cookie }: Props) {
+  const initialState = cookieToInitialState(wagmiConfig, cookie);
+  const [queryClient] = useState(() => new QueryClient());
 
   const theme = extendTheme({ initialColorMode: "dark", useSystemColorMode: false });
 
@@ -27,12 +29,20 @@ export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   };
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} initialState={initialState}>
       <QueryClientProvider client={queryClient}>
         <CacheProvider>
           <ChakraProvider resetCSS theme={theme}>
-            <RainbowKitProvider coolMode appInfo={appInfo}>
-              <StoreProvider>{mounted && children}</StoreProvider>
+            <RainbowKitProvider
+              coolMode
+              appInfo={appInfo}
+              theme={darkTheme({
+                accentColor: "#27b769",
+                accentColorForeground: "#fff",
+                overlayBlur: "large",
+              })}
+            >
+              <StoreProvider>{children}</StoreProvider>
             </RainbowKitProvider>
           </ChakraProvider>
         </CacheProvider>

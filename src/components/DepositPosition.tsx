@@ -71,6 +71,10 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   ) => {
     if (address && depositAmount && activeVault) {
       allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
+        console.log("Allowance: ", result)
+        console.log("depositAmount: ", depositAmount)
+        console.log("isAllowanceEnough: ", result >= parseUnits(depositAmount, activeVault.token.decimals))
+
         if (result >= parseUnits(depositAmount, activeVault.token.decimals)) {
           setIsAllowanceEnough(true);
         } else {

@@ -1,14 +1,10 @@
 import { useCallback } from "react";
 
 import { type Address } from "viem";
-import { readContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import MultiTroveGetter_ABI from "@/abis/MultiTroveGetter.json";
 import type { CombinedTroveDataType } from "@/types";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useMultiTroveGetter = (): {
   getMultipleSortedTroves: (
@@ -18,7 +14,9 @@ export const useMultiTroveGetter = (): {
     count: bigint,
   ) => Promise<CombinedTroveDataType[]>;
 } => {
-  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { isConnected, address, chain } = useAccount();
+
   const getMultipleSortedTroves = useCallback(
     async (
       multiTroveGetterAddress: Address,
@@ -27,8 +25,8 @@ export const useMultiTroveGetter = (): {
       count: bigint,
     ): Promise<CombinedTroveDataType[]> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const troves = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const troves = await publicClient?.readContract({
             abi: MultiTroveGetter_ABI.abi,
             account: address,
             address: multiTroveGetterAddress,
@@ -45,7 +43,7 @@ export const useMultiTroveGetter = (): {
         return [];
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   return {

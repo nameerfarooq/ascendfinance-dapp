@@ -1,13 +1,9 @@
 import { useCallback } from "react";
 
 import { type Address } from "viem";
-import { readContract, simulateContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import TroveManager_ABI from "@/abis/TroveManager.json";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
@@ -31,13 +27,22 @@ export const useTroveManager = (): {
   defaultedDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
   getTotalActiveDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
 } => {
-  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { isConnected, address, chain } = useAccount();
 
   const convertYieldTokensToShares = useCallback(
     async (troveManagerAddress: Address, amount: bigint): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress && amount) {
-          const { result } = await simulateContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          troveManagerAddress &&
+          amount
+        ) {
+          const { result } = await publicClient?.simulateContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -54,14 +59,14 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getTroveOwnersCount = useCallback(
     async (troveManagerAddress: Address): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const troveOwnersCount = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const troveOwnersCount = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -78,14 +83,22 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getTroveStatus = useCallback(
     async (troveManagerAddress: Address, walletAddress: Address): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress && walletAddress) {
-          const troveStatus = await readContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          troveManagerAddress &&
+          walletAddress
+        ) {
+          const troveStatus = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -102,14 +115,22 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getTroveCollSharesAndDebt = useCallback(
     async (troveManagerAddress: Address, walletAddress: Address): Promise<bigint[]> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress && walletAddress) {
-          const troveCollSharesAndDebt = await readContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          troveManagerAddress &&
+          walletAddress
+        ) {
+          const troveCollSharesAndDebt = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -126,14 +147,22 @@ export const useTroveManager = (): {
         return [0n, 0n];
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const convertSharesToYieldTokens = useCallback(
     async (troveManagerAddress: Address, shares: bigint): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress && shares) {
-          const { result } = await simulateContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          troveManagerAddress &&
+          shares
+        ) {
+          const { result } = await publicClient?.simulateContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -150,14 +179,14 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const fetchPriceInUsd = useCallback(
     async (troveManagerAddress: Address): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const { result } = await simulateContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const { result } = await publicClient?.simulateContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -174,14 +203,14 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const MCR = useCallback(
     async (troveManagerAddress: Address): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const { result } = await simulateContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const { result } = await publicClient?.simulateContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -198,7 +227,7 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getCurrentICR = useCallback(
@@ -208,8 +237,8 @@ export const useTroveManager = (): {
       usdPrice: bigint,
     ): Promise<bigint> => {
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const collateralRatio = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const collateralRatio = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -226,14 +255,14 @@ export const useTroveManager = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const vmPaused = useCallback(
     async (troveManagerAddress: Address): Promise<boolean | undefined> => {
       try {
-        if (isConnected && address && publicClient) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient) {
+          const result = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -247,14 +276,14 @@ export const useTroveManager = (): {
         console.log("vmPaused(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const sunsetting = useCallback(
     async (troveManagerAddress: Address): Promise<boolean | undefined> => {
       try {
-        if (isConnected && address && publicClient) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient) {
+          const result = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -268,7 +297,7 @@ export const useTroveManager = (): {
         console.log("sunsetting(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const maxSystemDebt = useCallback(
@@ -276,8 +305,8 @@ export const useTroveManager = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const result = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -294,7 +323,7 @@ export const useTroveManager = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const defaultedDebt = useCallback(
@@ -302,8 +331,8 @@ export const useTroveManager = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const result = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -320,7 +349,7 @@ export const useTroveManager = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getTotalActiveDebt = useCallback(
@@ -328,8 +357,8 @@ export const useTroveManager = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && troveManagerAddress) {
-          const result = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const result = await publicClient?.readContract({
             abi: TroveManager_ABI.abi,
             account: address,
             address: troveManagerAddress,
@@ -346,7 +375,7 @@ export const useTroveManager = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   return {

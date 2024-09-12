@@ -1,13 +1,9 @@
 import { useCallback } from "react";
 
 import { type Address } from "viem";
-import { readContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import SortedTroves_ABI from "@/abis/SortedTroves.json";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useSortedTroves = (): {
   findInsertPosition: (
@@ -17,7 +13,8 @@ export const useSortedTroves = (): {
     nextId: Address,
   ) => Promise<Address[]>;
 } => {
-  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { isConnected, address, chain } = useAccount();
 
   const findInsertPosition = useCallback(
     async (
@@ -30,13 +27,15 @@ export const useSortedTroves = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           sortedTrovesAddress &&
           NICR &&
           prevId &&
           nextId
         ) {
-          const result = await readContract(publicClient, {
+          const result = await publicClient?.readContract({
             abi: SortedTroves_ABI.abi,
             account: address,
             address: sortedTrovesAddress,
@@ -46,15 +45,6 @@ export const useSortedTroves = (): {
 
           return result as Address[];
         } else {
-          console.log("123", {
-            isConnected,
-            address,
-            publicClient,
-            sortedTrovesAddress,
-            NICR,
-            prevId,
-            nextId,
-          });
           return ["0x"];
         }
       } catch (error) {
@@ -62,7 +52,7 @@ export const useSortedTroves = (): {
         return ["0x"];
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   return {

@@ -1,13 +1,9 @@
 import { useCallback } from "react";
 
 import { type Address } from "viem";
-import { readContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import MultiCollateralHintHelpers_ABI from "@/abis/MultiCollateralHintHelpers.json";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useMultiCollateralHintHelpers = (): {
   computeNominalCR: (
@@ -23,7 +19,8 @@ export const useMultiCollateralHintHelpers = (): {
     inputRandomSeed: bigint,
   ) => Promise<[Address, bigint]>;
 } => {
-  const { isConnected, address } = useAccount();
+  const publicClient = usePublicClient();
+  const { isConnected, address, chain } = useAccount();
 
   const computeNominalCR = useCallback(
     async (
@@ -35,12 +32,14 @@ export const useMultiCollateralHintHelpers = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           multiCollateralHintHelpersAddress &&
           collateralAmount &&
           debtAmount
         ) {
-          const NICR = await readContract(publicClient, {
+          const NICR = await publicClient?.readContract({
             abi: MultiCollateralHintHelpers_ABI.abi,
             account: address,
             address: multiCollateralHintHelpersAddress,
@@ -57,7 +56,7 @@ export const useMultiCollateralHintHelpers = (): {
         return 0n;
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   const getApproxHint = useCallback(
@@ -72,6 +71,8 @@ export const useMultiCollateralHintHelpers = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           multiCollateralHintHelpersAddress &&
           troveManagerAddress &&
@@ -79,7 +80,7 @@ export const useMultiCollateralHintHelpers = (): {
           numTrial &&
           inputRandomSeed
         ) {
-          const result = await readContract(publicClient, {
+          const result = await publicClient?.readContract({
             abi: MultiCollateralHintHelpers_ABI.abi,
             account: address,
             address: multiCollateralHintHelpersAddress,
@@ -96,7 +97,7 @@ export const useMultiCollateralHintHelpers = (): {
         return ["0x", 0n];
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, publicClient],
   );
 
   return {

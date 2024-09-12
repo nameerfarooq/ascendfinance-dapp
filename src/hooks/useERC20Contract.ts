@@ -1,24 +1,12 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
 import { useCallback } from "react";
 
 import { useDispatch } from "react-redux";
-import {
-  createWalletClient,
-  custom,
-  formatUnits,
-  type Address,
-  type TransactionReceipt,
-} from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "viem/actions";
-import { useAccount } from "wagmi";
+import { formatUnits, type Address, type TransactionReceipt } from "viem";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 
 import ERC20_ABI from "@/abis/ERC20.json";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useERC20Contract = (): {
   balanceOf: (tokenAddress: Address, walletAddress: Address) => Promise<bigint>;
@@ -33,15 +21,17 @@ export const useERC20Contract = (): {
     amount: bigint,
   ) => Promise<TransactionReceipt | void>;
 } => {
-  const { isConnected, address } = useAccount();
-  const dispatch = useDispatch();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
+  const dispatch = useDispatch();
+  const publicClient = usePublicClient();
+  const walletClient = useWalletClient();
+  const { isConnected, chain, address } = useAccount();
 
   const balanceOf = useCallback(
     async (tokenAddress: Address, walletAddress: Address): Promise<bigint> => {
       try {
-        if (isConnected && tokenAddress && walletAddress) {
-          const balance = await readContract(publicClient, {
+        if (isConnected && address && chain && chain.id && tokenAddress && walletAddress) {
+          const balance = await publicClient?.readContract({
             abi: ERC20_ABI,
             address: tokenAddress,
             functionName: "balanceOf",
@@ -55,7 +45,7 @@ export const useERC20Contract = (): {
         return 0n;
       }
     },
-    [isConnected],
+    [isConnected, address, chain, publicClient],
   );
 
   const allowance = useCallback(
@@ -65,15 +55,25 @@ export const useERC20Contract = (): {
       spenderAddress: Address,
     ): Promise<bigint> => {
       try {
-        if (isConnected && tokenAddress && ownerAddress && spenderAddress) {
-          const balance = await readContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          tokenAddress &&
+          ownerAddress &&
+          spenderAddress
+        ) {
+          const allowance = await publicClient?.readContract({
             abi: ERC20_ABI,
             address: tokenAddress,
             functionName: "allowance",
             args: [ownerAddress, spenderAddress],
           });
 
-          return balance as bigint;
+          console.log("Result: ", allowance);
+
+          return allowance as bigint;
         } else {
           return 0n;
         }
@@ -82,7 +82,7 @@ export const useERC20Contract = (): {
         return 0n;
       }
     },
-    [isConnected],
+    [isConnected, address, chain, publicClient],
   );
 
   const approve = useCallback(
@@ -99,13 +99,17 @@ export const useERC20Contract = (): {
             text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
           }),
         );
-        if (isConnected && address && tokenAddress && spenderAddress && amount && publicClient) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          tokenAddress &&
+          spenderAddress &&
+          amount &&
+          publicClient
+        ) {
+          const txHash = await walletClient?.data?.writeContract({
             abi: ERC20_ABI,
             account: address,
             address: tokenAddress,
@@ -113,9 +117,11 @@ export const useERC20Contract = (): {
             args: [spenderAddress, amount],
           });
 
-          console.log("hash: ", hash);
+          console.log("hash: ", txHash);
 
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({
+            hash: txHash ? txHash : "0x",
+          });
           console.log("tx: ", tx);
 
           if (tx?.status === "success") {
@@ -146,14 +152,9 @@ export const useERC20Contract = (): {
             text2: `${formatUnits(amount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
           }),
         );
-        // const keys = Object.keys(error);
-
-        // for (const key of keys) {
-        //   console.log(key, ": ", error[key]);
-        // }
       }
     },
-    [isConnected, address],
+    [isConnected, address, chain, activeVault, publicClient, walletClient, dispatch],
   );
 
   return {

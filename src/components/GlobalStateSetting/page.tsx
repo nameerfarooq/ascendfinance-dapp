@@ -91,6 +91,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     address: troveManagerAddress,
     abi: TroveManager_ABI.abi,
     chainId: defaultChainId,
+    args: [],
     eventName: "TroveUpdated",
     onLogs(logs) {
       console.log("New logs!", logs);
@@ -124,6 +125,9 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     },
     onError(error) {
       console.log("useWatchContractEvent-TroveUpdated Error: ", error);
+      // Object.entries(error).forEach((entry) => {
+      //   console.log(entry);
+      // });
     },
   });
 

@@ -5,8 +5,10 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import Image from "next/image";
 import { useDispatch } from "react-redux";
 import { formatUnits, parseUnits, type Address } from "viem";
+// import { readContract } from "viem/actions";
 import { useAccount } from "wagmi";
 
+// import ERC20_ABI from "@/abis/ERC20.json";
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import { useDebounce } from "@/hooks";
@@ -19,6 +21,7 @@ import useTroveManager from "@/hooks/useTroveManager";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
 import { formatDecimals } from "@/utils/formatters";
+// import { wagmiConfig } from "@/wagmi";
 
 import goBackIcon from "../../public/icons/goBackIcon.svg";
 import mintIcon from "../../public/icons/mintIcon.svg";
@@ -150,6 +153,17 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
   ) => {
     if (address && depositAmount) {
       allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
+        console.log("fetchTokenAllowance()");
+        console.log("tokenAddress: ", tokenAddress);
+        console.log("ownerAddress: ", address);
+        console.log("spenderAddress: ", spenderAddress);
+        console.log("Allowance: ", result);
+        console.log("depositAmount: ", depositAmount);
+        console.log(
+          "isAllowanceEnough: ",
+          result >= parseUnits(depositAmount, activeVault.token.decimals),
+        );
+
         if (result >= parseUnits(depositAmount, activeVault.token.decimals)) {
           setIsAllowanceEnough(true);
         } else {
@@ -165,6 +179,11 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     amount: bigint,
   ) => {
     if (address && depositAmount) {
+      console.log("getTokenApproved()");
+      console.log("tokenAddress: ", tokenAddress);
+      console.log("spenderAddress: ", spenderAddress);
+      console.log("amount: ", amount);
+
       await approve(tokenAddress, spenderAddress, amount).then((tx) => {
         if (tx?.status === "success") {
           fetchTokenAllowance(tokenAddress, address, spenderAddress);
@@ -563,6 +582,10 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestBlockNumber, debouncedMintAmount]);
 
+  // const publicClient = wagmiConfig.getClient();
+
+  // const publicClient = usePublicClient()
+
   useEffect(() => {
     if (!isConnected) {
       setStats({
@@ -574,6 +597,20 @@ const MintSection: React.FC<MintSectionProps> = ({ handleShowMintSection }) => {
         remainingMintableGreen: 0n,
       });
     }
+
+    // console.log("Hello")
+
+    // publicClient?.readContract({
+    //   abi: ERC20_ABI,
+    //   address: "0xF0F058e935a2a43F72840F8146FE505D8E0d782D",
+    //   functionName: "allowance",
+    //   args: [
+    //     "0x432daa56f1aBDE1dC160eb86DAf236511a130BEF",
+    //     "0x28e8D20D1155875e19f1F48Ca56b7B9a2DB49bFB",
+    //   ],
+    // }).then((allowance) => {
+    //   console.log("AllowanceNew: ", allowance);
+    // });
   }, [isConnected]);
 
   return (

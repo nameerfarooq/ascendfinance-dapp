@@ -4,26 +4,15 @@ import { useCallback } from "react";
 
 import { useDispatch } from "react-redux";
 import {
-  createWalletClient,
-  custom,
   formatUnits,
   type Address,
   type TransactionReceipt,
 } from "viem";
-import {
-  readContract,
-  writeContract,
-  simulateContract,
-  waitForTransactionReceipt,
-} from "viem/actions";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 
 import BorrowerOperations_ABI from "@/abis/BorrowerOperations.json";
 import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
-import { wagmiConfig } from "@/wagmi";
-
-const publicClient = wagmiConfig.getClient();
 
 export const useBorrowerOperations = (): {
   openTrove: (
@@ -80,8 +69,10 @@ export const useBorrowerOperations = (): {
   getTCR: (borrowerOperationsAddress: Address) => Promise<bigint>;
   getGlobalSystemBalances: (borrowerOperationsAddress: Address) => Promise<bigint[]>;
 } => {
-  const { isConnected, address } = useAccount();
   const dispatch = useDispatch();
+  const publicClient = usePublicClient();
+  const walletClient = useWalletClient();
+  const { isConnected, chain, address } = useAccount();
   const activeVault = useAppSelector((state) => state.vault.activeVault);
 
   const openTrove = useCallback(
@@ -107,7 +98,10 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
+          walletClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
           walletAddress &&
@@ -117,12 +111,7 @@ export const useBorrowerOperations = (): {
           upperHint &&
           lowerHint
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -138,10 +127,9 @@ export const useBorrowerOperations = (): {
             ],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({ hash: txHash ? txHash : "0x" });
           console.log("tx: ", tx);
+
           if (tx) {
             dispatch(
               setLoader({
@@ -173,7 +161,7 @@ export const useBorrowerOperations = (): {
         console.log("openTrove(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const closeTrove = useCallback(
@@ -188,17 +176,14 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
           walletAddress
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -206,10 +191,9 @@ export const useBorrowerOperations = (): {
             args: [troveManagerAddress, walletAddress],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({ hash: txHash ? txHash : "0x" });
           console.log("tx: ", tx);
+
           if (tx?.status === "success") {
             dispatch(setLoader({ condition: "success", text1: "Repayed", text2: "GREEN" }));
           } else {
@@ -223,7 +207,7 @@ export const useBorrowerOperations = (): {
         console.log("closeTrove(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const addColl = useCallback(
@@ -247,6 +231,8 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
@@ -255,12 +241,7 @@ export const useBorrowerOperations = (): {
           upperHint &&
           lowerHint
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -268,10 +249,9 @@ export const useBorrowerOperations = (): {
             args: [troveManagerAddress, walletAddress, collateralAmount, upperHint, lowerHint],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({ hash: txHash ? txHash : "0x" });
           console.log("tx: ", tx);
+
           if (tx?.status === "success") {
             dispatch(
               setLoader({
@@ -303,7 +283,7 @@ export const useBorrowerOperations = (): {
         console.log("addColl(): ", error);
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const withdrawColl = useCallback(
@@ -327,6 +307,8 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
@@ -335,12 +317,7 @@ export const useBorrowerOperations = (): {
           upperHint &&
           lowerHint
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -348,10 +325,11 @@ export const useBorrowerOperations = (): {
             args: [troveManagerAddress, walletAddress, collateralAmount, upperHint, lowerHint],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({
+            hash: txHash ? txHash : "0x",
+          });
           console.log("tx: ", tx);
+
           if (tx?.status === "success") {
             dispatch(
               setLoader({
@@ -382,7 +360,7 @@ export const useBorrowerOperations = (): {
         );
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const repayDebt = useCallback(
@@ -406,6 +384,8 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
@@ -414,12 +394,7 @@ export const useBorrowerOperations = (): {
           upperHint &&
           lowerHint
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -427,10 +402,11 @@ export const useBorrowerOperations = (): {
             args: [troveManagerAddress, walletAddress, debtAmount, upperHint, lowerHint],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({
+            hash: txHash ? txHash : "0x",
+          });
           console.log("tx: ", tx);
+
           if (tx?.status === "success") {
             dispatch(
               setLoader({
@@ -461,7 +437,7 @@ export const useBorrowerOperations = (): {
         );
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const withdrawDebt = useCallback(
@@ -486,6 +462,8 @@ export const useBorrowerOperations = (): {
         if (
           isConnected &&
           address &&
+          chain &&
+          chain.id &&
           publicClient &&
           borrowerOperationsAddress &&
           troveManagerAddress &&
@@ -495,12 +473,7 @@ export const useBorrowerOperations = (): {
           upperHint &&
           lowerHint
         ) {
-          const walletClient = createWalletClient({
-            chain: publicClient.chain,
-            transport: custom(window.ethereum!),
-          });
-
-          const hash = await writeContract(walletClient, {
+          const txHash = await walletClient?.data?.writeContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -515,10 +488,11 @@ export const useBorrowerOperations = (): {
             ],
           });
 
-          console.log("hash: ", hash);
-
-          const tx = await waitForTransactionReceipt(publicClient, { hash, retryDelay: 6500 });
+          const tx = await publicClient?.waitForTransactionReceipt({
+            hash: txHash ? txHash : "0x",
+          });
           console.log("tx: ", tx);
+
           if (tx?.status === "success") {
             dispatch(
               setLoader({
@@ -549,7 +523,7 @@ export const useBorrowerOperations = (): {
         );
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient, walletClient],
   );
 
   const minNetDebt = useCallback(
@@ -557,8 +531,15 @@ export const useBorrowerOperations = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && borrowerOperationsAddress) {
-          const result = await readContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          borrowerOperationsAddress
+        ) {
+          const result = await publicClient?.readContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -575,7 +556,7 @@ export const useBorrowerOperations = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient],
   );
 
   const CCR = useCallback(
@@ -583,8 +564,15 @@ export const useBorrowerOperations = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && borrowerOperationsAddress) {
-          const result = await readContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          borrowerOperationsAddress
+        ) {
+          const result = await publicClient?.readContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -601,7 +589,7 @@ export const useBorrowerOperations = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient],
   );
 
   const getTCR = useCallback(
@@ -609,8 +597,15 @@ export const useBorrowerOperations = (): {
       const defaultValue = 0n;
 
       try {
-        if (isConnected && address && publicClient && borrowerOperationsAddress) {
-          const { result } = await simulateContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          borrowerOperationsAddress
+        ) {
+          const { result } = await publicClient?.simulateContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -627,7 +622,7 @@ export const useBorrowerOperations = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient],
   );
 
   const getGlobalSystemBalances = useCallback(
@@ -635,8 +630,15 @@ export const useBorrowerOperations = (): {
       const defaultValue = [0n, 0n];
 
       try {
-        if (isConnected && address && publicClient && borrowerOperationsAddress) {
-          const { result } = await simulateContract(publicClient, {
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          publicClient &&
+          borrowerOperationsAddress
+        ) {
+          const { result } = await publicClient?.simulateContract({
             abi: BorrowerOperations_ABI.abi,
             account: address,
             address: borrowerOperationsAddress,
@@ -653,7 +655,7 @@ export const useBorrowerOperations = (): {
         return defaultValue;
       }
     },
-    [isConnected, address],
+    [isConnected, address, publicClient],
   );
 
   return {
