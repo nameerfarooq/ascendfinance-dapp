@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import type { FC, ReactNode } from "react";
 
 import type { Address } from "viem";
-import { useAccount, useWatchBlockNumber, useWatchContractEvent } from "wagmi";
+import { useAccount, useWatchBlockNumber } from "wagmi";
 
-import TroveManager_ABI from "@/abis/TroveManager.json";
+import { useWatchTroveManagerTroveUpdatedEvent } from "@/abis/generated";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import useAscendCore from "@/hooks/useAscendCore";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
@@ -45,6 +45,7 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
 
   const dispatch = useAppDispatch();
   const { paused } = useAscendCore();
+  // const publicClient = usePublicClient();
   const { isConnected, chain, address } = useAccount();
   const { minNetDebt, CCR, getTCR, getGlobalSystemBalances } = useBorrowerOperations();
   const {
@@ -87,12 +88,9 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
     },
   });
 
-  useWatchContractEvent({
+  useWatchTroveManagerTroveUpdatedEvent({
     address: troveManagerAddress,
-    abi: TroveManager_ABI.abi,
-    chainId: defaultChainId,
-    args: [],
-    eventName: "TroveUpdated",
+    chainId: chain?.id || defaultChainId,
     onLogs(logs) {
       console.log("New logs!", logs);
 
@@ -124,12 +122,58 @@ const GlobalStateSetting: FC<GlobalStateSettingProps> = ({ children }) => {
       }
     },
     onError(error) {
-      console.log("useWatchContractEvent-TroveUpdated Error: ", error);
+      console.log("useWatchTroveManagerTroveUpdatedEvent Error: ", error);
       // Object.entries(error).forEach((entry) => {
       //   console.log(entry);
       // });
     },
   });
+
+  // useWatchContractEvent({
+  //   address: troveManagerAddress,
+  //   abi: TroveManager_ABI.abi,
+  //   chainId: chain?.id || defaultChainId,
+  //   args: {
+  //     "_borrower": address,
+  //   },
+  //   eventName: "TroveUpdated",
+  //   onLogs(logs) {
+  //     console.log("New logs!", logs);
+
+  //     if (isConnected && chain && address && activeVault) {
+  //       defaultedDebt(troveManagerAddress).then((result) => {
+  //         dispatch(setDefaultedDebt(result.toString()));
+  //       });
+
+  //       getTotalActiveDebt(troveManagerAddress).then((result) => {
+  //         dispatch(setTotalActiveDebt(result.toString()));
+  //       });
+
+  //       getTroveOwnersCount(troveManagerAddress).then((result) => {
+  //         dispatch(setTroveOwnersCount(result.toString()));
+  //       });
+
+  //       getTCR(borrowerOperationsAddress).then((result) => {
+  //         dispatch(setTCR(result.toString()));
+  //       });
+
+  //       getGlobalSystemBalances(borrowerOperationsAddress).then((result) => {
+  //         dispatch(
+  //           setGlobalSystemBalances({
+  //             totalPricedCollateral: result[0].toString(),
+  //             totalDebt: result[1].toString(),
+  //           }),
+  //         );
+  //       });
+  //     }
+  //   },
+  //   onError(error) {
+  //     console.log("useWatchContractEvent-TroveUpdated Error: ", error);
+  //     Object.entries(error).forEach((entry) => {
+  //       console.log(entry);
+  //     });
+  //   },
+  // });
 
   useEffect(() => {
     if (isConnected && chain && address && activeVault && activeVault) {
