@@ -33,8 +33,14 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
 }) => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isPaused } = useAppSelector((state) => state.protocol.protocol);
-  const { isVMPaused, isSunSetting, troveCollateralShares, troveDebt, troveOwnersCount } =
-    useAppSelector((state) => state.protocol.trove);
+  const {
+    isVMPaused,
+    isSunSetting,
+    troveCollateralShares,
+    troveDebt,
+    troveCollateralTokens,
+    troveOwnersCount,
+  } = useAppSelector((state) => state.protocol.trove);
 
   const dispatch = useDispatch();
   const { isConnected, chain, address } = useAccount();
@@ -50,7 +56,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   const [isAllowanceEnough, setIsAllowanceEnough] = useState<boolean>(false);
   const [isDepositValid, setIsDepositValid] = useState<boolean>(false);
   const [depositerror, setDepositError] = useState<string>("");
-  const [newCollateralRatio, setNewCollateralRatio] = useState<number>(0);
+  const [newCollateralRatio, setNewCollateralRatio] = useState<number | string>(0);
   const [btnLoading, setbtnLoading] = useState(false);
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
@@ -71,9 +77,12 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   ) => {
     if (address && depositAmount && activeVault) {
       allowance(tokenAddress, ownerAddress, spenderAddress).then((result) => {
-        console.log("Allowance: ", result)
-        console.log("depositAmount: ", depositAmount)
-        console.log("isAllowanceEnough: ", result >= parseUnits(depositAmount, activeVault.token.decimals))
+        console.log("Allowance: ", result);
+        console.log("depositAmount: ", depositAmount);
+        console.log(
+          "isAllowanceEnough: ",
+          result >= parseUnits(depositAmount, activeVault.token.decimals),
+        );
 
         if (result >= parseUnits(depositAmount, activeVault.token.decimals)) {
           setIsAllowanceEnough(true);
@@ -117,7 +126,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
     amount: bigint,
   ) => {
     try {
-      setbtnLoading(true)
+      setbtnLoading(true);
       if (address && activeVault) {
         dispatch(
           setLoader({
@@ -195,10 +204,9 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
         });
         console.log("tx: ", tx);
       }
-      setbtnLoading(false)
-
+      setbtnLoading(false);
     } catch (error) {
-      setbtnLoading(false)
+      setbtnLoading(false);
 
       if (activeVault) {
         dispatch(
@@ -246,7 +254,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
   };
 
   const validateDeposit = () => {
-    setbtnLoading(true)
+    setbtnLoading(true);
 
     if (isPaused || isVMPaused || isSunSetting) {
       setIsDepositValid(false);
@@ -272,8 +280,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
       setIsDepositValid(false);
       setDepositError("Deposit amount is greater than token balance");
     }
-    setbtnLoading(false)
- 
+    setbtnLoading(false);
   };
 
   const calcNewCollRatio = () => {
@@ -286,12 +293,14 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
         priceInUSD !== "0"
       ) {
         const newCollAmount =
-          BigInt(troveCollateralShares) + parseUnits(depositAmount, activeVault?.token.decimals);
+          BigInt(troveCollateralTokens) + parseUnits(depositAmount, activeVault?.token.decimals);
 
+        console.log("newCollAmount: ", newCollAmount);
         const collRatio = ((newCollAmount * BigInt(priceInUSD)) / BigInt(troveDebt)) * 100n;
-        setNewCollateralRatio(
-          parseFloat(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2)),
-        );
+
+        console.log("collRatio: ", collRatio);
+
+        setNewCollateralRatio(formatDecimals(parseFloat(formatUnits(collRatio, 18)), 2));
       } else {
         setNewCollateralRatio(0);
       }
@@ -366,11 +375,11 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-            {tokenBalance &&
+            {tokenBalance && (
               <button type="button" onClick={setDepositToMax} className="font-bold">
                 Max
               </button>
-            }
+            )}
           </div>
         </div>
         {depositerror && <p className="text-[#FF5710] mt-4 text-[12px]">{depositerror}</p>}
@@ -416,7 +425,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
               "-"
             )}
 
-            {newCollateralRatio && !depositerror ?  (
+            {newCollateralRatio && !depositerror ? (
               <span className="text-[#C84D1E]">
                 {" -> "}
                 {`${newCollateralRatio}%`}
