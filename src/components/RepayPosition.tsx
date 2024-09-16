@@ -180,6 +180,8 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
           setRepayAmount("");
         });
         console.log("tx: ", tx);
+
+        getAlreadyMintedDebt();
       }
     } catch (error) {
       if (activeVault) {
@@ -311,27 +313,28 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
       calcNewCollRatio()
     }
   }, [debouncedRepayAmount, isRecoveryMode])
+  const getAlreadyMintedDebt = async () => {
+    if (address && chain && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+
+      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+      //   troveManagerAddress,
+      //   address,
+      // );
+      // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+      console.log("running")
+      const mintedTokens = await convertSharesToYieldTokens(
+        troveManagerAddress,
+        BigInt(troveDebt),
+      );
+
+      setAlreadyMintedDebt(mintedTokens.toString());
+    }
+  };
   useEffect(() => {
-    const getAlreadyMintedDebt = async () => {
-      if (address && chain && activeVault) {
-        const troveManagerAddress: Address =
-          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-            .TROVE_MANAGER;
 
-        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-        //   troveManagerAddress,
-        //   address,
-        // );
-        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
-
-        const mintedTokens = await convertSharesToYieldTokens(
-          troveManagerAddress,
-          BigInt(troveDebt),
-        );
-
-        setAlreadyMintedDebt(mintedTokens.toString());
-      }
-    };
     getAlreadyMintedDebt();
 
     if (address) {
@@ -341,45 +344,45 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, chain, address, activeVault]);
+  const getValidate = async () => {
+    setbtnLoading(true)
+    if (address && chain && activeVault && repayAmount) {
+      const repayAmountLocal = parseUnits(debouncedRepayAmount, activeVault.token.decimals);
 
-  useEffect(() => {
-    const getValidate = async () => {
-      setbtnLoading(true)
-      if (address && chain && activeVault && repayAmount) {
-        const repayAmountLocal = parseUnits(debouncedRepayAmount, activeVault.token.decimals);
+      setIsPositionClosing(false);
 
-        setIsPositionClosing(false);
-
-        if (repayAmountLocal <= 0n) {
-          setIsValidated(false);
-          setError("Your desired Repay amount should be greater than 0");
-          setWarning("");
-        } else if (repayAmountLocal > BigInt(alreadyMintedDebt)) {
-          setIsValidated(false);
-          setError("Your desired repay amount is greater than minted token");
-          setWarning("");
-        } else if (repayAmountLocal === BigInt(alreadyMintedDebt)) {
-          setWarning(
-            "Your desired repay amount is equal to minted token, Your position will be closed if you proceed",
-          );
-          setIsValidated(true);
-          setError("");
-          setIsPositionClosing(true);
-        } else {
-          setIsValidated(true);
-          setWarning("");
-          setError("");
-        }
-
+      if (repayAmountLocal <= 0n) {
+        setIsValidated(false);
+        setError("Your desired Repay amount should be greater than 0");
+        setWarning("");
+      } else if (repayAmountLocal > BigInt(alreadyMintedDebt)) {
+        setIsValidated(false);
+        setError("Your desired repay amount is greater than minted token");
+        setWarning("");
+      } else if (repayAmountLocal === BigInt(alreadyMintedDebt)) {
+        setWarning(
+          "Your desired repay amount is equal to minted token, Your position will be closed if you proceed",
+        );
+        setIsValidated(true);
+        setError("");
+        setIsPositionClosing(true);
       } else {
         setIsValidated(true);
         setWarning("");
         setError("");
-
       }
 
-      userLevelChecks();
-    };
+    } else {
+      setIsValidated(true);
+      setWarning("");
+      setError("");
+
+    }
+
+    userLevelChecks();
+  };
+  useEffect(() => {
+
     getValidate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedRepayAmount, isConnected, chain, address, activeVault, tokenBalance]);
