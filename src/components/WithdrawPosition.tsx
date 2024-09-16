@@ -188,7 +188,10 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         if (tx?.status === "success") {
           setwithdrawAmount("");
         }
+        getAlreadyDepositedTokens()
+
         setbtnLoading(false);
+
       }
     } catch (error) {
       setbtnLoading(false);
@@ -339,31 +342,31 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedwithdrawAmount, address, activeVault, existingSharesAndDebt]);
+  const getAlreadyDepositedTokens = async () => {
+    if (address && chain && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
 
+      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
+      //   troveManagerAddress,
+      //   address,
+      // );
+
+      setexistingSharesAndDebt([BigInt(troveCollateralShares), BigInt(troveDebt)]);
+      // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
+      const depositedTokens = await convertSharesToYieldTokens(
+        troveManagerAddress,
+        BigInt(troveCollateralShares),
+      );
+      setAlreadyDepositedTokens(depositedTokens.toString());
+    } else {
+      setAlreadyDepositedTokens("");
+
+    }
+  };
   useEffect(() => {
-    const getAlreadyDepositedTokens = async () => {
-      if (address && chain && activeVault) {
-        const troveManagerAddress: Address =
-          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-            .TROVE_MANAGER;
 
-        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-        //   troveManagerAddress,
-        //   address,
-        // );
-
-        setexistingSharesAndDebt([BigInt(troveCollateralShares), BigInt(troveDebt)]);
-        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
-        const depositedTokens = await convertSharesToYieldTokens(
-          troveManagerAddress,
-          BigInt(troveCollateralShares),
-        );
-        setAlreadyDepositedTokens(depositedTokens.toString());
-      } else {
-        setAlreadyDepositedTokens("");
-
-      }
-    };
     getAlreadyDepositedTokens();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, chain, activeVault]);
@@ -379,6 +382,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
             value={withdrawAmount}
             onChange={handleWithdrawInputChange}
             type="number"
+            disabled={alreadyDepositedTokens == ''}
             placeholder="0.29 weETH"
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
