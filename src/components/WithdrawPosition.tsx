@@ -8,13 +8,12 @@ import React, {
 } from "react";
 
 import { useDispatch } from "react-redux";
-import { formatUnits, parseUnits, type Address } from "viem";
+import { formatUnits, parseEther, parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import { useDebounce } from "@/hooks";
 import useBorrowerOperations from "@/hooks/useBorrowerOperations";
-// import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
@@ -30,21 +29,17 @@ interface WithdrawPositionProps {
   collateralRatio: string;
   setPingAmountChange: Dispatch<SetStateAction<string>>;
 }
-const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collateralRatio }) => {
+const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collateralRatio, setPingAmountChange }) => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
-
   const { chain, address } = useAccount();
-  // const { balanceOf } = useERC20Contract();
   const {
     convertYieldTokensToShares,
     convertSharesToYieldTokens,
-    // getTroveOwnersCount,
-    // getTroveCollSharesAndDebt,
+
   } = useTroveManager();
   const { computeNominalCR, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
   const { withdrawColl } = useBorrowerOperations();
-  // const { fetchPriceInUsd } = useTroveManager()
   const [withdrawAmount, setwithdrawAmount] = useState("");
   const debouncedwithdrawAmount = useDebounce(withdrawAmount, 350);
   const [isWithdrawValid, setisWithdrawValid] = useState(false);
@@ -62,41 +57,27 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
   );
   const [existingSharesAndDebt, setexistingSharesAndDebt] = useState<bigint[]>([]);
   const [btnLoading, setbtnLoading] = useState(false);
-  // const [priceInUSD, setpriceInUSD] = useState(0n)
   const [newCollRatio, setNewCollRatio] = useState("");
 
-  useEffect(() => {
-    const calcRatios = async () => {
-      if (address && chain && activeVault) {
-        // const troveManagerAddress: Address =
-        //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-        //     .TROVE_MANAGER;
+  const getAlreadyDepositedTokens = async () => {
+    if (address && chain && activeVault) {
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
 
-        // const existingSharesInTokens = await convertSharesToYieldTokens(
-        //   troveManagerAddress,
-        //   existingSharesAndDebt[0],
-        // );
-        const tokensTobeWithdrawn = parseUnits(
-          debouncedwithdrawAmount,
-          activeVault?.token?.decimals,
-        );
-        const newCollAmount = BigInt(troveCollateralTokens) - tokensTobeWithdrawn;
-        // const priceInUsd = await fetchPriceInUsd(troveManagerAddress)
-        // setpriceInUSD(priceInUsd)
 
-        const newCollRatio = (newCollAmount * BigInt(priceInUSD)) / existingSharesAndDebt[1];
-        console.log("newCollRatio :", newCollRatio);
-        setNewCollRatio(formatUnits(newCollRatio, activeVault.token.decimals));
-      }
-    };
-    if (existingSharesAndDebt[0] && existingSharesAndDebt[1] && debouncedwithdrawAmount > "0") {
-      calcRatios();
+
+      setexistingSharesAndDebt([BigInt(troveCollateralShares), BigInt(troveDebt)]);
+      const depositedTokens = await convertSharesToYieldTokens(
+        troveManagerAddress,
+        BigInt(troveCollateralShares),
+      );
+      setAlreadyDepositedTokens(depositedTokens.toString());
     } else {
-      setNewCollRatio("");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedwithdrawAmount, latestBlockNumber]);
+      setAlreadyDepositedTokens("");
 
+    }
+  };
   const handleWithdrawInputChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const { value } = event.target;
     setwithdrawAmount(value);
@@ -131,12 +112,6 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         const sharesAmount = await convertYieldTokensToShares(troveManagerAddress, amount);
         console.log("sharesAmount: ", sharesAmount);
 
-        // Step#2
-        // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-        //   troveManagerAddress,
-        //   address,
-        // );
-        // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
 
         // // Step#3
         const totalShares = BigInt(troveCollateralShares) - sharesAmount;
@@ -150,9 +125,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         );
         console.log("NCIR: ", NCIR);
 
-        // // Step#5
-        // const troveOwnersCount = await getTroveOwnersCount(troveManagerAddress);
-        // console.log("troveOwnersCount: ", troveOwnersCount);
+
 
         // // Step#6
         const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
@@ -187,6 +160,8 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         console.log("tx: ", tx);
         if (tx?.status === "success") {
           setwithdrawAmount("");
+          setPingAmountChange("1")
+
         }
         getAlreadyDepositedTokens()
 
@@ -221,7 +196,6 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
           .SORTED_TROVES;
 
-      //   if (isAllowanceEnough) {
       getTokenWithdrawed(
         troveManagerAddress,
         multiCollateralHintHelpersAddress,
@@ -229,7 +203,6 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         borrowerOperationsAddress,
         parseUnits(debouncedwithdrawAmount, activeVault.token.decimals),
       );
-      //   }
     } else {
       console.log("wallet not connected.");
     }
@@ -254,17 +227,13 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
 
         const sharesToWithdraw = await convertYieldTokensToShares(
           troveManagerAddress,
-          BigInt(debouncedwithdrawAmount),
+          parseEther(debouncedwithdrawAmount),
         );
-        const sharesToWithdrawInWei = parseUnits(
-          sharesToWithdraw.toString(),
-          activeVault.token.decimals,
-        );
-        console.log("sharesToWithdraw :", sharesToWithdrawInWei);
+
 
         console.log("existingSharesAndDebt :", existingSharesAndDebt);
 
-        const newShares = existingSharesAndDebt[0] - sharesToWithdrawInWei;
+        const newShares = existingSharesAndDebt[0] - sharesToWithdraw;
         console.log("newShares :", newShares);
 
         //step 5
@@ -286,21 +255,6 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         //step 9
 
         const totalPricedCollateral = globalSystemBalances.totalPricedCollateral;
-        // console.log(
-        //   "totalPricedCollateral : ",
-        //   BigInt(totalPricedCollateral) / 1000000000000000000n,
-        // );
-        // console.log(
-        //   "totalPricedCollateral converted",
-        //   formatUnits(
-        //     BigInt(totalPricedCollateral) / 1000000000000000000n,
-        //     activeVault.token.decimals,
-        //   ),
-        // );
-        //step 11
-
-        // const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
-        // console.log("Price in USD", priceInUSD)
 
         const userICR = (tokensTobeWithdrawn * BigInt(priceInUSD)) / existingSharesAndDebt[1];
         console.log("userICR", userICR);
@@ -335,6 +289,29 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
     }
     setbtnLoading(false);
   };
+  useEffect(() => {
+    const calcRatios = async () => {
+      if (address && chain && activeVault) {
+
+        const tokensTobeWithdrawn = parseUnits(
+          debouncedwithdrawAmount,
+          activeVault?.token?.decimals,
+        );
+        const newCollAmount = BigInt(troveCollateralTokens) - tokensTobeWithdrawn;
+
+
+        const newCollRatio = (newCollAmount * BigInt(priceInUSD)) / existingSharesAndDebt[1];
+        console.log("newCollRatio :", newCollRatio);
+        setNewCollRatio(formatUnits(newCollRatio, activeVault.token.decimals));
+      }
+    };
+    if (existingSharesAndDebt[0] && existingSharesAndDebt[1] && debouncedwithdrawAmount > "0") {
+      calcRatios();
+    } else {
+      setNewCollRatio("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedwithdrawAmount, latestBlockNumber]);
 
   useEffect(() => {
     if (existingSharesAndDebt[0]) {
@@ -342,29 +319,7 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedwithdrawAmount, address, activeVault, existingSharesAndDebt]);
-  const getAlreadyDepositedTokens = async () => {
-    if (address && chain && activeVault) {
-      const troveManagerAddress: Address =
-        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
-          .TROVE_MANAGER;
 
-      // const troveCollSharesAndDebt = await getTroveCollSharesAndDebt(
-      //   troveManagerAddress,
-      //   address,
-      // );
-
-      setexistingSharesAndDebt([BigInt(troveCollateralShares), BigInt(troveDebt)]);
-      // console.log("troveCollSharesAndDebt: ", troveCollSharesAndDebt);
-      const depositedTokens = await convertSharesToYieldTokens(
-        troveManagerAddress,
-        BigInt(troveCollateralShares),
-      );
-      setAlreadyDepositedTokens(depositedTokens.toString());
-    } else {
-      setAlreadyDepositedTokens("");
-
-    }
-  };
   useEffect(() => {
 
     getAlreadyDepositedTokens();

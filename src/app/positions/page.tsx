@@ -20,14 +20,13 @@ import postionsIcon from "../../../public/icons/positionsIcon.svg";
 
 const Page = () => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
-  const {troveCollateralShares, troveDebt} = useAppSelector((state) => state.protocol.trove);
+  const {troveCollateralTokens, troveDebt} = useAppSelector((state) => state.protocol.trove);
 
   const router = useRouter();
   const { isConnected, address, chain } = useAccount();
   const {
     getTroveStatus,
     // getTroveCollSharesAndDebt,
-    convertSharesToYieldTokens,
     // fetchPriceInUsd,
     getCurrentICR,
   } = useTroveManager();
@@ -60,10 +59,7 @@ const Page = () => {
         //   address,
         // );
 
-        const yieldTokens = await convertSharesToYieldTokens(
-          troveManagerAddress,
-          BigInt(troveCollateralShares),
-        );
+        const yieldTokens = BigInt(troveCollateralTokens)
 
         // const priceInUSD = await fetchPriceInUsd(troveManagerAddress);
 

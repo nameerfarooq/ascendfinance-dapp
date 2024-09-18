@@ -35,7 +35,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   };
 
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
-  const { MCR_value, troveCollateralShares, troveDebt, troveOwnersCount } = useAppSelector(
+  const { MCR_value, troveCollateralShares, troveCollateralTokens, troveDebt, troveOwnersCount } = useAppSelector(
     (state) => state.protocol.trove,
   );
 
@@ -43,7 +43,7 @@ const Page = ({ params }: { params: { id: string } }) => {
   const dispatch = useAppDispatch();
   const { isConnected, address, chain } = useAccount();
   const {
-    convertSharesToYieldTokens,
+    
     getCurrentICR,
   } = useTroveManager();
   const { getMultipleSortedTroves } = useMultiTroveGetter();
@@ -68,10 +68,7 @@ const Page = ({ params }: { params: { id: string } }) => {
         const multiTroveGetterAddress: Address =
           CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_TROVE_GETTER;
 
-        const yieldTokens = await convertSharesToYieldTokens(
-          troveManagerAddress,
-          BigInt(troveCollateralShares),
-        );
+        const yieldTokens = BigInt(troveCollateralTokens);
         const currentICR = await getCurrentICR(troveManagerAddress, address, BigInt(priceInUSD));
 
         if (BigInt(troveCollateralShares) > 0n) {
@@ -122,6 +119,7 @@ const Page = ({ params }: { params: { id: string } }) => {
     if (isConnected && address && chain && params && params.id) {
       getSinglePositionStats(params.id as Address).then((result) => {
         if (result) {
+          console.log(" results : - > ",result)
           setPositionStats(result);
         } else {
           setPositionStats(initialPositionStats);
@@ -129,7 +127,7 @@ const Page = ({ params }: { params: { id: string } }) => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, address, chain, params, pingAmountChange, defaultChainId, troveCollateralShares, troveOwnersCount]);
+  }, [isConnected, address, chain, params, pingAmountChange, defaultChainId, troveCollateralShares, troveOwnersCount, priceInUSD]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
