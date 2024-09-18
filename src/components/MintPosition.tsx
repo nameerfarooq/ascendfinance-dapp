@@ -44,7 +44,7 @@ const MintPosition: FC<MintPositionProps> = ({
     MCR_value,
     troveCollateralShares,
     troveDebt,
-    troveOwnersCount,troveCollateralTokens
+    troveOwnersCount, troveCollateralTokens
   } = useAppSelector((state) => state.protocol.trove);
   const { CCR_value, globalSystemBalances } = useAppSelector((state) => state.protocol.borrowerOp);
 
@@ -155,8 +155,11 @@ const MintPosition: FC<MintPositionProps> = ({
           insertPosition[0],
           insertPosition[1],
         ).then(() => {
-          calcMaxMintableAmount(BigInt(priceInUSD));
+          setMaxMintableAmount('')
           setMintAmount("");
+          setPingAmountChange('1')
+          calcMaxMintableAmount(BigInt(priceInUSD));
+
         });
         console.log("tx: ", tx);
       }
@@ -352,6 +355,7 @@ const MintPosition: FC<MintPositionProps> = ({
             type="number"
             placeholder="1.00 GREEN"
             value={mintAmount}
+            disabled={maxMintableAmount == ''}
             onChange={handleMintInputChange}
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
@@ -392,7 +396,7 @@ const MintPosition: FC<MintPositionProps> = ({
               "-"
             )}
 
-            {newCollateralRatio && !minterror? (
+            {newCollateralRatio && !minterror ? (
               <span className="text-[#C84D1E]">
                 {" -> "}
                 {`${newCollateralRatio}%`}

@@ -26,7 +26,7 @@ interface RepayPositionProps {
   setPingAmountChange: Dispatch<SetStateAction<string>>;
   collateralRatio: string
 }
-const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRatio }) => {
+const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRatio, setPingAmountChange }) => {
   const priceInUSD = useAppSelector((state) => state.protocol.priceInUSD);
   const { isRecoveryMode } = useAppSelector((state) => state.protocol.protocol);
   const { CCR_value, globalSystemBalances, minNetDebt } = useAppSelector(
@@ -94,6 +94,7 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
       const tx = await closeTrove(borrowerOperationsAddress, troveManagerAddress, address);
       console.log("tx: ", tx);
       if (tx?.status === "success") {
+        setPingAmountChange("1")
         setTimeout(() => {
           router.push("/positions");
         }, 4000);
@@ -178,10 +179,12 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
             CONTRACT_ADDRESSES[appBuildEnvironment][defaultChainId].DEBT_TOKEN;
           fetchTokenbalance(debtTokenAddress, address);
           setRepayAmount("");
+          setAlreadyMintedDebt('')
+          setPingAmountChange("1")
+          getAlreadyMintedDebt();
         });
         console.log("tx: ", tx);
 
-        getAlreadyMintedDebt();
       }
     } catch (error) {
       if (activeVault) {
@@ -399,6 +402,8 @@ const RepayPosition: React.FC<RepayPositionProps> = ({ activeVault, collateralRa
             onChange={handleRepayInputChange}
             type="number"
             placeholder="100 GREEN"
+            disabled={alreadyMintedDebt == ''}
+
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">

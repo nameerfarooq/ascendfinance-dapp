@@ -161,9 +161,9 @@ const WithdrawPosition: React.FC<WithdrawPositionProps> = ({ activeVault, collat
         if (tx?.status === "success") {
           setwithdrawAmount("");
           setPingAmountChange("1")
+          getAlreadyDepositedTokens()
 
         }
-        getAlreadyDepositedTokens()
 
         setbtnLoading(false);
 
