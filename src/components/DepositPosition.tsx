@@ -193,8 +193,9 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
           insertPosition[0],
           insertPosition[1],
         ).then(() => {
-          fetchTokenbalance(activeVault.token.address, address);
           setDepositAmount("");
+          setPingAmountChange("1")
+          fetchTokenbalance(activeVault.token.address, address);
 
           if (address && chain) {
             const borrowerOperationsAddress: Address =
@@ -372,6 +373,7 @@ const DepositPosition: React.FC<DepositPositionProps> = ({
             placeholder={`1.000 ${activeVault?.token.symbol}`}
             value={depositAmount}
             onChange={handleDepositInputChange}
+            disabled={tokenBalance == ''}
             className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
           />
           <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
