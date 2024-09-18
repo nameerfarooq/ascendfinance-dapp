@@ -3,33 +3,47 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import type { Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import CollateralTypeCard from "@/components/CollateralTypeCard";
 import RedeemListItem from "@/components/RedeemListItem";
 import vaultsList from "@/constants/vaults";
+import useERC20Contract from "@/hooks/useERC20Contract";
 import type { VaultType } from "@/types";
+
 import { getDefaultChainId } from "@/utils/chain";
+
+import { formatDecimals } from "@/utils/formatters";
 
 import redeemIcon from "../../../public/icons/redeemIcon.svg";
 
 
 
 const Page = () => {
+  const { balanceOf } = useERC20Contract();
+
   const [showCollateralSelectionCard, setshowCollateralSelectionCard] = useState(false);
   const handleShowCollateralCard = () => {
     setshowCollateralSelectionCard(!showCollateralSelectionCard);
   };
+  const [tokenBalance, setTokenBalance] = useState("");
 
 
   const [activeVault, setActiveVault] = useState<VaultType | undefined>();
-  const { chain, isConnected } = useAccount();
+  const { chain, isConnected, address } = useAccount();
 
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const defaultChainId: number = getDefaultChainId(chain);
-
+  const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
+    if (address) {
+      balanceOf(tokenAddress, walletAddress).then((balance: bigint) => {
+        setTokenBalance(balance.toString());
+      });
+    }
+  };
   useEffect(() => {
     if (nativeVaultsList && isConnected && defaultChainId && chain) {
 
@@ -39,7 +53,11 @@ const Page = () => {
       setActiveVault(nativeVaultsList[defaultChainId][vaultIds[0]])
     }
   }, [nativeVaultsList, defaultChainId, chain, isConnected])
-
+  useEffect(() => {
+    if (activeVault && address) {
+      fetchTokenbalance(activeVault?.token.address, address)
+    }
+  }, [activeVault, address])
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       {showCollateralSelectionCard && (
@@ -79,7 +97,7 @@ const Page = () => {
                 <div className="flex justify-between items-center">
                   <p className="font-medium text-[12px] leading-[24px]">Redeem GREEN</p>
                   <p className="font-medium text-[12px] leading-[24px]">
-                    Available: <span className="font-extrabold"> 2000</span> GREEN
+                    Available: <span className="font-extrabold"> {formatDecimals(Number(tokenBalance),2) || '0'}</span> GREEN
                   </p>
                 </div>
                 <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
