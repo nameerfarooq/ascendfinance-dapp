@@ -1,18 +1,34 @@
+"use client";
 import type React from "react";
-import type { ReactEventHandler } from "react";
+import type { Dispatch, ReactEventHandler, SetStateAction } from "react";
 
 import { FiSearch } from "react-icons/fi";
 import { RxCross2 } from "react-icons/rx";
+import { useAccount } from "wagmi";
+
+import vaultsList from "@/constants/vaults";
+import type { VaultType } from "@/types";
+import { getDefaultChainId } from "@/utils/chain";
 
 import CollateralItem from "./CollateralItem";
-import ezETHIcon from "../../public/icons/ezETH.svg";
-import weETHIcon from "../../public/icons/weETH.svg";
+
 
 interface CollateralTypeCardProps {
   handleShowCollateralCard: ReactEventHandler;
+  setActiveVault: Dispatch<SetStateAction<VaultType | undefined>>;  // Make it optional
 }
 
-const CollateralTypeCard: React.FC<CollateralTypeCardProps> = ({ handleShowCollateralCard }) => {
+const CollateralTypeCard: React.FC<CollateralTypeCardProps> = ({ handleShowCollateralCard, setActiveVault }) => {
+  const { chain } = useAccount();
+  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+  const nativeVaultsList = vaultsList[appBuildEnvironment];
+  const defaultChainId: number = getDefaultChainId(chain);
+  const handleCollateralChange = (e:any, vault:VaultType) => {
+    console.log("vault is :", vault)
+    setActiveVault(vault);
+    handleShowCollateralCard(e)
+  }
+
   return (
     <div className="absolute top-0 left-0 w-full h-screen bg-black bg-opacity-70 flex items-center justify-center z-30">
       <div className="relative shadowCustom rounded-3xl flex flex-col gap-4 px-4 sm:px-10 py-8  bg-baseColor w-[90%] sm:w-[460px] min-w-[250px]">
@@ -30,18 +46,17 @@ const CollateralTypeCard: React.FC<CollateralTypeCardProps> = ({ handleShowColla
             />
           </div>
           <div className="overflow-y-scroll max-h-[410px]">
-            <CollateralItem
-              symbol="weETH"
-              imageSrc={weETHIcon}
-              name="Etherfi Restaked Ether"
-              apr="8.99%"
-            />
-            <CollateralItem
-              symbol="ezETH"
-              imageSrc={ezETHIcon}
-              name="Renzo Restaked Ether"
-              apr="5.99%"
-            />
+            {Object.keys(nativeVaultsList[defaultChainId]).map((vaultId) => (
+              <div key={vaultId}
+                onClick={(e) => { handleCollateralChange(e, nativeVaultsList[defaultChainId][vaultId]) }}>
+                <CollateralItem
+                  symbol={nativeVaultsList[defaultChainId][vaultId].token.symbol}
+                  imageSrc={nativeVaultsList[defaultChainId][vaultId].token.logoURI}
+                  name={nativeVaultsList[defaultChainId][vaultId].token.name}
+                  apr="-"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

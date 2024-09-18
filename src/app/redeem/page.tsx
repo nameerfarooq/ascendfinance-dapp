@@ -1,15 +1,20 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import CollateralTypeCard from "@/components/CollateralTypeCard";
 import RedeemListItem from "@/components/RedeemListItem";
+import vaultsList from "@/constants/vaults";
+import type { VaultType } from "@/types";
+import { getDefaultChainId } from "@/utils/chain";
 
 import redeemIcon from "../../../public/icons/redeemIcon.svg";
-import weETHIcon from "../../../public/icons/weETH.svg";
+
+
 
 const Page = () => {
   const [showCollateralSelectionCard, setshowCollateralSelectionCard] = useState(false);
@@ -17,10 +22,28 @@ const Page = () => {
     setshowCollateralSelectionCard(!showCollateralSelectionCard);
   };
 
+
+  const [activeVault, setActiveVault] = useState<VaultType | undefined>();
+  const { chain, isConnected } = useAccount();
+
+  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+  const nativeVaultsList = vaultsList[appBuildEnvironment];
+  const defaultChainId: number = getDefaultChainId(chain);
+
+  useEffect(() => {
+    if (nativeVaultsList && isConnected && defaultChainId && chain) {
+
+      console.log("nativeVaultsList[defaultChainId] :", nativeVaultsList[defaultChainId])
+      const vaultIds = Object.keys(nativeVaultsList[chain?.id]);
+
+      setActiveVault(nativeVaultsList[defaultChainId][vaultIds[0]])
+    }
+  }, [nativeVaultsList, defaultChainId, chain, isConnected])
+
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       {showCollateralSelectionCard && (
-        <CollateralTypeCard handleShowCollateralCard={handleShowCollateralCard} />
+        <CollateralTypeCard handleShowCollateralCard={handleShowCollateralCard} setActiveVault={setActiveVault} />
       )}
       <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[10px]  lg:w-[70%]  xl:w-[65%] 2xl:w-[55%] ">
         <div className="pt-6 pb-10 px-12">
@@ -47,8 +70,8 @@ const Page = () => {
                 className="cursor-pointer rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center"
               >
                 <div className="flex items-center gap-3">
-                  <Image src={weETHIcon} width={30} alt="token icon" />
-                  <p className="font-bold text-[18px] leading-[36px]">weETH</p>
+                  <Image src={activeVault?.token.logoURI || ''} width={30} alt="token icon" />
+                  <p className="font-bold text-[18px] leading-[36px]">{activeVault?.token.symbol}</p>
                 </div>
                 {showCollateralSelectionCard ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
               </div>
@@ -89,7 +112,7 @@ const Page = () => {
             </div>
 
             <div className="mt-[60px] md:mt-0">
-              <ButtonStyle1 disabled={false} text="Redeem" action={async () => {}} />
+              <ButtonStyle1 disabled={false} text="Redeem" action={async () => { }} />
             </div>
           </div>
           <hr className="border-lightGray2 w-full my-[20px] md:hidden" />
