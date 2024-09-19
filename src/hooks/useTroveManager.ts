@@ -1,9 +1,12 @@
 import { useCallback } from "react";
 
-import { type Address } from "viem";
-import { useAccount, usePublicClient } from "wagmi";
+import { useDispatch } from "react-redux";
+import { formatUnits, type Address, type TransactionReceipt } from "viem";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 
 import TroveManager_ABI from "@/abis/TroveManager.json";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
+import type { VaultType } from "@/types";
 
 export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
@@ -26,9 +29,129 @@ export const useTroveManager = (): {
   maxSystemDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
   defaultedDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
   getTotalActiveDebt: (borrowerOperationsAddress: Address) => Promise<bigint>;
+  redeemCollateral: (
+    troveManagerAddress: Address,
+    activeVault: VaultType,
+    debtAmount: bigint,
+    firstRedemptionHint: Address,
+    upperPartialRedemptionHint: Address,
+    lowerPartialRedemptionHint: Address,
+    partialRedemptionHintNICR: bigint,
+    maxIterations: bigint,
+    maxFeePercentage: bigint
+  ) => Promise<TransactionReceipt | void>
 } => {
   const publicClient = usePublicClient();
   const { isConnected, address, chain } = useAccount();
+  const dispatch = useDispatch()
+  const walletClient = useWalletClient();
+
+
+  const redeemCollateral = useCallback(
+    async (
+      troveManagerAddress: Address,
+      activeVault: VaultType,
+      debtAmount: bigint,
+      firstRedemptionHint: Address,
+      upperPartialRedemptionHint: Address,
+      lowerPartialRedemptionHint: Address,
+      partialRedemptionHintNICR: bigint,
+      maxIterations: bigint,
+      maxFeePercentage: bigint
+
+    ): Promise<TransactionReceipt | void> => {
+      try {
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Redeem",
+            text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
+
+        if (
+          isConnected &&
+          address &&
+          chain &&
+          chain.id &&
+          walletClient &&
+          publicClient &&
+          troveManagerAddress &&
+          activeVault &&
+          debtAmount &&
+          firstRedemptionHint &&
+          upperPartialRedemptionHint &&
+          lowerPartialRedemptionHint &&
+          partialRedemptionHintNICR &&
+          maxFeePercentage
+        ) {
+          console.log("debtAmount :", debtAmount)
+          console.log("firstRedemptionHint :", firstRedemptionHint)
+          console.log("upperPartialRedemptionHint :", upperPartialRedemptionHint)
+          console.log("lowerPartialRedemptionHint :", lowerPartialRedemptionHint)
+          console.log("partialRedemptionHintNICR :", partialRedemptionHintNICR)
+          console.log("maxIterations :", maxIterations)
+          console.log("maxFeePercentage :", maxFeePercentage)
+          const txHash = await walletClient?.data?.writeContract({
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "redeemCollateral",
+            args: [
+              debtAmount,
+              firstRedemptionHint,
+              upperPartialRedemptionHint,
+              lowerPartialRedemptionHint,
+              partialRedemptionHintNICR,
+              maxIterations,
+              maxFeePercentage,
+            ],
+          });
+
+          const tx = await publicClient?.waitForTransactionReceipt({
+            hash: txHash ? txHash : "0x",
+          });
+          console.log("tx: ", tx);
+
+          if (tx?.status === "success") {
+            dispatch(
+              setLoader({
+                condition: "success",
+                text1: "Redeemed",
+                text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+              }),
+            );
+          } else {
+            dispatch(
+              setLoader({
+                condition: "failed",
+                text1: "Redeem",
+                text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+              }),
+            );
+          }
+          return tx;
+        }
+        dispatch(
+          setLoader({
+            condition: "failed",
+            text1: "Redeem",
+            text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
+      } catch (error) {
+        console.log("redeemCollateral(): ", error);
+        dispatch(
+          setLoader({
+            condition: "failed",
+            text1: "Redeem",
+            text2: `${formatUnits(debtAmount, activeVault.token.decimals)} ${activeVault.token.symbol}`,
+          }),
+        );
+      }
+    },
+    [isConnected, address, publicClient, walletClient],
+  );
 
   const convertYieldTokensToShares = useCallback(
     async (troveManagerAddress: Address, amount: bigint): Promise<bigint> => {
@@ -379,6 +502,7 @@ export const useTroveManager = (): {
   );
 
   return {
+    redeemCollateral,
     convertYieldTokensToShares,
     getTroveOwnersCount,
     getTroveStatus,

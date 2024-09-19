@@ -3,40 +3,59 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
-import type { Address } from "viem";
+import { parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
 import ButtonStyle1 from "@/components/Buttons/ButtonStyle1";
 import CollateralTypeCard from "@/components/CollateralTypeCard";
 import RedeemListItem from "@/components/RedeemListItem";
+import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
 import useERC20Contract from "@/hooks/useERC20Contract";
+import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
+import useSortedTroves from "@/hooks/useSortedTroves";
+import useTroveManager from "@/hooks/useTroveManager";
+import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
-
 import { getDefaultChainId } from "@/utils/chain";
-
 import { formatDecimals } from "@/utils/formatters";
 
 import redeemIcon from "../../../public/icons/redeemIcon.svg";
 
 
 
-const Page = () => {
-  const { balanceOf } = useERC20Contract();
 
+const Page = () => {
+
+  const { balanceOf } = useERC20Contract();
+  const { chain, isConnected, address } = useAccount();
+  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
+  const defaultChainId: number = getDefaultChainId(chain);
+  const nativeVaultsList = vaultsList[appBuildEnvironment];
+  const priceInUSD = useAppSelector((state: any) => state.protocol.priceInUSD);
+  const {
+
+    troveOwnersCount,
+  } = useAppSelector((state) => state.protocol.trove);
+  const { getRedemptionHints, getApproxHint } = useMultiCollateralHintHelpers()
+  const { findInsertPosition } = useSortedTroves();
+  const { redeemCollateral } = useTroveManager()
+
+
+  const [tokenBalance, setTokenBalance] = useState("");
+  const [activeVault, setActiveVault] = useState<VaultType | undefined>();
   const [showCollateralSelectionCard, setshowCollateralSelectionCard] = useState(false);
+  const [redeemValue, setRedeemValue] = useState('')
+
+
+
+
   const handleShowCollateralCard = () => {
     setshowCollateralSelectionCard(!showCollateralSelectionCard);
   };
-  const [tokenBalance, setTokenBalance] = useState("");
-
-
-  const [activeVault, setActiveVault] = useState<VaultType | undefined>();
-  const { chain, isConnected, address } = useAccount();
-
-  const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
-  const nativeVaultsList = vaultsList[appBuildEnvironment];
-  const defaultChainId: number = getDefaultChainId(chain);
+  const setRedeemValueToMax = () => {
+    setRedeemValue(tokenBalance)
+  }
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
       balanceOf(tokenAddress, walletAddress).then((balance: bigint) => {
@@ -44,6 +63,7 @@ const Page = () => {
       });
     }
   };
+
   useEffect(() => {
     if (nativeVaultsList && isConnected && defaultChainId && chain) {
 
@@ -53,11 +73,95 @@ const Page = () => {
       setActiveVault(nativeVaultsList[defaultChainId][vaultIds[0]])
     }
   }, [nativeVaultsList, defaultChainId, chain, isConnected])
+
   useEffect(() => {
     if (activeVault && address) {
       fetchTokenbalance(activeVault?.token.address, address)
     }
   }, [activeVault, address])
+
+
+  const getTokensRedeemed = async (multiCollateralHintHelpersAddress: Address,
+    troveManagerAddress: Address, sortedTrovesAddress: Address) => {
+    if (activeVault) {
+
+      //step 1
+      const redemptionHints = await getRedemptionHints(
+        multiCollateralHintHelpersAddress,
+        troveManagerAddress,
+        parseUnits(redeemValue, activeVault?.token.decimals), //debtAmount
+        priceInUSD, //_price
+        BigInt('0')//maxIterations
+      )
+      console.log("redemptionHints :", redemptionHints)
+      console.log("redemptionHints 0:", redemptionHints[0])
+      console.log("redemptionHints 1:", redemptionHints[1])
+      console.log("redemptionHints 2:", redemptionHints[2])
+
+      //step 2
+      console.log("troveOwnersCount :", troveOwnersCount)
+
+      //step 3
+      const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+      const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+
+      const approxHint = await getApproxHint(
+        multiCollateralHintHelpersAddress,
+        troveManagerAddress,
+        redemptionHints[1], //NICR
+        numTrials.toString(),
+        inputRandomSeed,
+      );
+      console.log("approxHint: ", approxHint);
+
+      //step 4
+      const insertPosition = await findInsertPosition(
+        sortedTrovesAddress,
+        redemptionHints[1], //
+        approxHint[0],
+        approxHint[0],
+      );
+      console.log("insertPosition: ", insertPosition);
+
+      //step 5
+
+      const tx = await redeemCollateral(
+        troveManagerAddress,
+        activeVault,
+        parseUnits(redeemValue, activeVault?.token.decimals), //debtAmount
+        redemptionHints[0],
+        insertPosition[0],
+        insertPosition[1],
+        redemptionHints[1],
+        BigInt('0'),
+        BigInt('1000000000000000000')
+      )
+      console.log("tx: ", tx);
+
+    }
+  }
+
+
+  const handleCtaFunctions = () => {
+    if (address && chain && activeVault) {
+      // const borrowerOperationsAddress: Address =
+      //   CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].BORROWER_OPERATIONS;
+      const troveManagerAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .TROVE_MANAGER;
+      const multiCollateralHintHelpersAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].MULTI_COLLATERAL_HINT_HELPERS;
+      const sortedTrovesAddress: Address =
+        CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+          .SORTED_TROVES;
+      getTokensRedeemed(
+        multiCollateralHintHelpersAddress,
+        troveManagerAddress,
+        sortedTrovesAddress
+      )
+    }
+  }
+
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       {showCollateralSelectionCard && (
@@ -94,21 +198,25 @@ const Page = () => {
                 {showCollateralSelectionCard ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
               </div>
               <div className="mt-8">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap">
                   <p className="font-medium text-[12px] leading-[24px]">Redeem GREEN</p>
                   <p className="font-medium text-[12px] leading-[24px]">
-                    Available: <span className="font-extrabold"> {formatDecimals(Number(tokenBalance),2) || '0'}</span> GREEN
+                    Available: <span className="font-extrabold"> {formatDecimals(Number(tokenBalance), 2) || '0'}</span> GREEN
                   </p>
                 </div>
                 <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
                   <input
+                    value={redeemValue}
+                    onChange={(e) => setRedeemValue(e.target.value)}
                     type="number"
                     placeholder="1.000"
-                    className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-auto"
+                    className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-full"
                   />
-                  <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-                    <button className="font-bold">Max</button>
-                  </div>
+                  {tokenBalance &&
+                    <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
+                      <button onClick={setRedeemValueToMax} className="font-bold">Max</button>
+                    </div>
+                  }
                 </div>
               </div>
               <div className="mt-8 flex justify-end items-center">
@@ -130,7 +238,7 @@ const Page = () => {
             </div>
 
             <div className="mt-[60px] md:mt-0">
-              <ButtonStyle1 disabled={false} text="Redeem" action={async () => { }} />
+              <ButtonStyle1 disabled={false} text="Redeem" action={handleCtaFunctions} />
             </div>
           </div>
           <hr className="border-lightGray2 w-full my-[20px] md:hidden" />
