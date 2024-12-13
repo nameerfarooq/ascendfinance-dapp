@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { FaAngleDown, FaAngleUp } from "react-icons/fa6";
+import { useDispatch } from "react-redux";
 import { parseUnits, type Address } from "viem";
 import { useAccount } from "wagmi";
 
@@ -11,10 +12,12 @@ import CollateralTypeCard from "@/components/CollateralTypeCard";
 import RedeemListItem from "@/components/RedeemListItem";
 import { CONTRACT_ADDRESSES } from "@/constants/contracts";
 import vaultsList from "@/constants/vaults";
+import { useDebounce } from "@/hooks";
 import useERC20Contract from "@/hooks/useERC20Contract";
 import useMultiCollateralHintHelpers from "@/hooks/useMultiCollateralHintHelpers";
 import useSortedTroves from "@/hooks/useSortedTroves";
 import useTroveManager from "@/hooks/useTroveManager";
+import { setLoader } from "@/lib/features/loader/loaderSlice";
 import { useAppSelector } from "@/lib/hooks";
 import type { VaultType } from "@/types";
 import { getDefaultChainId } from "@/utils/chain";
@@ -22,125 +25,136 @@ import { formatDecimals } from "@/utils/formatters";
 
 import redeemIcon from "../../../public/icons/redeemIcon.svg";
 
-
-
-
 const Page = () => {
-
   const { balanceOf } = useERC20Contract();
   const { chain, isConnected, address } = useAccount();
   const appBuildEnvironment = process.env.NEXT_PUBLIC_ENVIRONMENT === "PROD" ? "PROD" : "DEV";
   const defaultChainId: number = getDefaultChainId(chain);
   const nativeVaultsList = vaultsList[appBuildEnvironment];
   const priceInUSD = useAppSelector((state: any) => state.protocol.priceInUSD);
-  const {
-
-    troveOwnersCount,
-  } = useAppSelector((state) => state.protocol.trove);
-  const { getRedemptionHints, getApproxHint } = useMultiCollateralHintHelpers()
+  const { troveOwnersCount } = useAppSelector((state) => state.protocol.trove);
+  const { getRedemptionHints, getApproxHint } = useMultiCollateralHintHelpers();
   const { findInsertPosition } = useSortedTroves();
-  const { redeemCollateral } = useTroveManager()
-
+  const { redeemCollateral, BOOTSTRAP_PERIOD, systemDeploymentTime } = useTroveManager();
+  const { MCR_value } = useAppSelector((state) => state.protocol.trove);
+  const { TCR_value } = useAppSelector((state) => state.protocol.borrowerOp);
 
   const [tokenBalance, setTokenBalance] = useState("");
   const [activeVault, setActiveVault] = useState<VaultType | undefined>();
   const [showCollateralSelectionCard, setshowCollateralSelectionCard] = useState(false);
-  const [redeemValue, setRedeemValue] = useState('')
-
-
-
-
+  const [redeemValue, setRedeemValue] = useState("");
+  const [error, setError] = useState("");
+  const [isValid, setisValid] = useState(false);
+  const [btnLoading, setbtnLoading] = useState(false);
+  const debouncedRedeemValue = useDebounce(redeemValue, 350);
+  const dispatch = useDispatch()
   const handleShowCollateralCard = () => {
     setshowCollateralSelectionCard(!showCollateralSelectionCard);
   };
   const setRedeemValueToMax = () => {
-    setRedeemValue(tokenBalance)
-  }
+    setRedeemValue(tokenBalance);
+  };
   const fetchTokenbalance = (tokenAddress: Address, walletAddress: Address) => {
     if (address) {
+      setbtnLoading(true)
+
       balanceOf(tokenAddress, walletAddress).then((balance: bigint) => {
         setTokenBalance(balance.toString());
+        setbtnLoading(false)
       });
     }
   };
 
-  useEffect(() => {
-    if (nativeVaultsList && isConnected && defaultChainId && chain) {
+  const getTokensRedeemed = async (
+    multiCollateralHintHelpersAddress: Address,
+    troveManagerAddress: Address,
+    sortedTrovesAddress: Address,
+  ) => {
+    try {
+      setbtnLoading(true)
+      if (activeVault) {
+        dispatch(
+          setLoader({
+            condition: "loading",
+            text1: "Redeem",
+            text2: redeemValue,
+          }),
+        );
+        //step 1
+        const redemptionHints = await getRedemptionHints(
+          multiCollateralHintHelpersAddress,
+          troveManagerAddress,
+          parseUnits(debouncedRedeemValue, activeVault?.token.decimals), //debtAmount
+          priceInUSD, //_price
+          BigInt("0"), //maxIterations
+        );
+        console.log("redemptionHints :", redemptionHints);
+        console.log("redemptionHints 0:", redemptionHints[0]);
+        console.log("redemptionHints 1:", redemptionHints[1]);
+        console.log("redemptionHints 2:", redemptionHints[2]);
 
-      console.log("nativeVaultsList[defaultChainId] :", nativeVaultsList[defaultChainId])
-      const vaultIds = Object.keys(nativeVaultsList[chain?.id]);
+        //step 2
+        console.log("troveOwnersCount :", troveOwnersCount);
 
-      setActiveVault(nativeVaultsList[defaultChainId][vaultIds[0]])
-    }
-  }, [nativeVaultsList, defaultChainId, chain, isConnected])
+        //step 3
+        const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
+        const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
 
-  useEffect(() => {
-    if (activeVault && address) {
-      fetchTokenbalance(activeVault?.token.address, address)
-    }
-  }, [activeVault, address])
+        const approxHint = await getApproxHint(
+          multiCollateralHintHelpersAddress,
+          troveManagerAddress,
+          redemptionHints[1], //NICR
+          numTrials.toString(),
+          inputRandomSeed,
+        );
+        console.log("approxHint: ", approxHint);
 
+        //step 4
+        const insertPosition = await findInsertPosition(
+          sortedTrovesAddress,
+          redemptionHints[1], //
+          approxHint[0],
+          approxHint[0],
+        );
+        console.log("insertPosition: ", insertPosition);
 
-  const getTokensRedeemed = async (multiCollateralHintHelpersAddress: Address,
-    troveManagerAddress: Address, sortedTrovesAddress: Address) => {
-    if (activeVault) {
+        //step 5
 
-      //step 1
-      const redemptionHints = await getRedemptionHints(
-        multiCollateralHintHelpersAddress,
-        troveManagerAddress,
-        parseUnits(redeemValue, activeVault?.token.decimals), //debtAmount
-        priceInUSD, //_price
-        BigInt('0')//maxIterations
-      )
-      console.log("redemptionHints :", redemptionHints)
-      console.log("redemptionHints 0:", redemptionHints[0])
-      console.log("redemptionHints 1:", redemptionHints[1])
-      console.log("redemptionHints 2:", redemptionHints[2])
+        const tx = await redeemCollateral(
+          troveManagerAddress,
+          activeVault,
+          parseUnits(debouncedRedeemValue, activeVault?.token.decimals), //debtAmount
+          redemptionHints[0],
+          insertPosition[0],
+          insertPosition[1],
+          redemptionHints[1],
+          BigInt("0"),
+          BigInt("1000000000000000000"),
+        ).then(() => {
+          setbtnLoading(false)
+          setRedeemValue("")
+          if (address) {
+            fetchTokenbalance(activeVault?.token.address, address);
+          }
 
-      //step 2
-      console.log("troveOwnersCount :", troveOwnersCount)
+        });
+        console.log("tx: ", tx);
+        setbtnLoading(false)
 
-      //step 3
-      const numTrials = Math.ceil(15 * Math.sqrt(Number(troveOwnersCount)));
-      const inputRandomSeed = BigInt(Math.ceil(Math.random() * 100000));
+      }
+    } catch (error) {
+      setbtnLoading(false)
 
-      const approxHint = await getApproxHint(
-        multiCollateralHintHelpersAddress,
-        troveManagerAddress,
-        redemptionHints[1], //NICR
-        numTrials.toString(),
-        inputRandomSeed,
+      dispatch(
+        setLoader({
+          condition: "loading",
+          text1: "Redeem",
+          text2: redeemValue,
+        }),
       );
-      console.log("approxHint: ", approxHint);
-
-      //step 4
-      const insertPosition = await findInsertPosition(
-        sortedTrovesAddress,
-        redemptionHints[1], //
-        approxHint[0],
-        approxHint[0],
-      );
-      console.log("insertPosition: ", insertPosition);
-
-      //step 5
-
-      const tx = await redeemCollateral(
-        troveManagerAddress,
-        activeVault,
-        parseUnits(redeemValue, activeVault?.token.decimals), //debtAmount
-        redemptionHints[0],
-        insertPosition[0],
-        insertPosition[1],
-        redemptionHints[1],
-        BigInt('0'),
-        BigInt('1000000000000000000')
-      )
-      console.log("tx: ", tx);
-
     }
-  }
 
+  };
 
   const handleCtaFunctions = () => {
     if (address && chain && activeVault) {
@@ -157,15 +171,85 @@ const Page = () => {
       getTokensRedeemed(
         multiCollateralHintHelpersAddress,
         troveManagerAddress,
-        sortedTrovesAddress
-      )
+        sortedTrovesAddress,
+      );
     }
-  }
+  };
+
+  const validateRedeem = async () => {
+    if (address && chain && activeVault) {
+      setbtnLoading(true)
+
+      if (BigInt(debouncedRedeemValue) <= 0n) {
+        setError("Redeem amount must be greater than 0");
+        setisValid(false);
+
+        //step 7
+      } else if (BigInt(debouncedRedeemValue) > BigInt(tokenBalance)) {
+        setError("Insufficient balance");
+        setisValid(false);
+      } else {
+        const troveManagerAddress: Address =
+          CONTRACT_ADDRESSES[appBuildEnvironment][chain?.id].troves[activeVault.token.address]
+            .TROVE_MANAGER;
+        //step 1
+        const bootStrapPeroid = await BOOTSTRAP_PERIOD(troveManagerAddress);
+        console.log("bootStrapPeroid : ", bootStrapPeroid);
+
+        //step 2
+        const systemDeployementTimeFetched = await systemDeploymentTime(troveManagerAddress);
+        console.log("systemDeployementTimeFetched : ", systemDeployementTimeFetched);
+
+        //step 3
+        const currentTimeStamp = Date.now();
+        console.log("currentTimeStamp : ", BigInt(currentTimeStamp));
+
+        if (BigInt(currentTimeStamp) < systemDeployementTimeFetched + bootStrapPeroid) {
+          setisValid(false);
+          setError("Cannot redeem during Bootstrap period");
+
+          //step 4,5,6
+        } else if (TCR_value < MCR_value) {
+          setisValid(false);
+          setError("Cannot redeem when TCR < MCR");
+
+        } else {
+          setisValid(true);
+          setError("");
+        }
+      }
+      setbtnLoading(false)
+
+    }
+  };
+
+  useEffect(() => {
+    if (nativeVaultsList && isConnected && defaultChainId && chain) {
+      const vaultIds = Object.keys(nativeVaultsList[chain?.id]);
+      setActiveVault(nativeVaultsList[defaultChainId][vaultIds[0]]);
+    }
+  }, [nativeVaultsList, defaultChainId, chain, isConnected]);
+
+  useEffect(() => {
+    if (activeVault && address) {
+      fetchTokenbalance(activeVault?.token.address, address);
+    }
+  }, [activeVault, address]);
+
+  useEffect(() => {
+    if (debouncedRedeemValue && tokenBalance) {
+      console.log("sasdasd");
+      validateRedeem();
+    }
+  }, [debouncedRedeemValue, isConnected, activeVault, tokenBalance]);
 
   return (
     <div className="flex items-center justify-center min-h-full w-full">
       {showCollateralSelectionCard && (
-        <CollateralTypeCard handleShowCollateralCard={handleShowCollateralCard} setActiveVault={setActiveVault} />
+        <CollateralTypeCard
+          handleShowCollateralCard={handleShowCollateralCard}
+          setActiveVault={setActiveVault}
+        />
       )}
       <div className="bg-baseColor shadowCustom rounded-3xl w-[90%] mt-[50px] md:mt-[10px]  lg:w-[70%]  xl:w-[65%] 2xl:w-[55%] ">
         <div className="pt-6 pb-10 px-12">
@@ -192,8 +276,10 @@ const Page = () => {
                 className="cursor-pointer rounded-2xl bg-secondaryColor py-3 px-5 sm:px-8 flex justify-between gap-2 items-center"
               >
                 <div className="flex items-center gap-3">
-                  <Image src={activeVault?.token.logoURI || ''} width={30} alt="token icon" />
-                  <p className="font-bold text-[18px] leading-[36px]">{activeVault?.token.symbol}</p>
+                  <Image src={activeVault?.token.logoURI || ""} width={30} alt="token icon" />
+                  <p className="font-bold text-[18px] leading-[36px]">
+                    {activeVault?.token.symbol}
+                  </p>
                 </div>
                 {showCollateralSelectionCard ? <FaAngleUp size={16} /> : <FaAngleDown size={16} />}
               </div>
@@ -201,23 +287,33 @@ const Page = () => {
                 <div className="flex justify-between items-center flex-wrap">
                   <p className="font-medium text-[12px] leading-[24px]">Redeem GREEN</p>
                   <p className="font-medium text-[12px] leading-[24px]">
-                    Available: <span className="font-extrabold"> {formatDecimals(Number(tokenBalance), 2) || '0'}</span> GREEN
+                    Available:{" "}
+                    <span className="font-extrabold">
+                      {" "}
+                      {formatDecimals(Number(tokenBalance), 2) || "0"}
+                    </span>{" "}
+                    GREEN
                   </p>
                 </div>
-                <div className=" mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center">
+                <div className={`${redeemValue !== "" && error ? "border-[#FF5710]" : "border-transparent"} border mt-3 rounded-2xl bg-secondaryColor py-4 px-4 sm:px-8 text-lightGray flex justify-between gap-2 items-center`}>
                   <input
                     value={redeemValue}
                     onChange={(e) => setRedeemValue(e.target.value)}
                     type="number"
+                    disabled={tokenBalance == ""}
                     placeholder="1.000"
                     className="bg-transparent placeholder:text-lightGray text-white outline-none border-none font-medium text-[16px] sm:text-[18px] leading-[36px] w-[120px] sm:w-full"
                   />
-                  {tokenBalance &&
+                  {tokenBalance && (
                     <div className="flex items-center gap-4 sm:gap-8 md:gap-28 font-medium text-[12px] sm:text-[14px] leading-[28px]">
-                      <button onClick={setRedeemValueToMax} className="font-bold">Max</button>
+                      <button onClick={setRedeemValueToMax} className="font-bold">
+                        Max
+                      </button>
                     </div>
-                  }
+                  )}
                 </div>
+                {redeemValue !== "" && error && <p className="text-[#FF5710] mt-4">{error}</p>}
+
               </div>
               <div className="mt-8 flex justify-end items-center">
                 <div className="rounded-lg bg-[#FF5710] px-12 text-center text-[12px] leading-[24px] text-white font-bold">
@@ -238,7 +334,7 @@ const Page = () => {
             </div>
 
             <div className="mt-[60px] md:mt-0">
-              <ButtonStyle1 disabled={false} text="Redeem" action={handleCtaFunctions} />
+              <ButtonStyle1 btnLoading={btnLoading} disabled={!isValid || !redeemValue} text="Redeem" action={handleCtaFunctions} />
             </div>
           </div>
           <hr className="border-lightGray2 w-full my-[20px] md:hidden" />

@@ -11,6 +11,8 @@ import type { VaultType } from "@/types";
 export const useTroveManager = (): {
   convertYieldTokensToShares: (troveManagerAddress: Address, amount: bigint) => Promise<bigint>;
   getTroveOwnersCount: (troveManagerAddress: Address) => Promise<bigint>;
+  BOOTSTRAP_PERIOD: (troveManagerAddress: Address) => Promise<bigint>;
+  systemDeploymentTime: (troveManagerAddress: Address) => Promise<bigint>;
   getTroveStatus: (troveManagerAddress: Address, walletAddress: Address) => Promise<bigint>;
   getTroveCollSharesAndDebt: (
     troveManagerAddress: Address,
@@ -85,13 +87,7 @@ export const useTroveManager = (): {
           partialRedemptionHintNICR &&
           maxFeePercentage
         ) {
-          console.log("debtAmount :", debtAmount)
-          console.log("firstRedemptionHint :", firstRedemptionHint)
-          console.log("upperPartialRedemptionHint :", upperPartialRedemptionHint)
-          console.log("lowerPartialRedemptionHint :", lowerPartialRedemptionHint)
-          console.log("partialRedemptionHintNICR :", partialRedemptionHintNICR)
-          console.log("maxIterations :", maxIterations)
-          console.log("maxFeePercentage :", maxFeePercentage)
+
           const txHash = await walletClient?.data?.writeContract({
             abi: TroveManager_ABI.abi,
             account: address,
@@ -185,6 +181,52 @@ export const useTroveManager = (): {
     [isConnected, address, chain, publicClient],
   );
 
+  const BOOTSTRAP_PERIOD = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      try {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const BOOTSTRAP_PERIOD = await publicClient?.readContract({
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "BOOTSTRAP_PERIOD",
+            args: [],
+          });
+
+          return BOOTSTRAP_PERIOD as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("BOOTSTRAP_PERIOD(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address, chain, publicClient],
+  );
+  const systemDeploymentTime = useCallback(
+    async (troveManagerAddress: Address): Promise<bigint> => {
+      try {
+        if (isConnected && address && chain && chain.id && publicClient && troveManagerAddress) {
+          const systemDeploymentTime = await publicClient?.readContract({
+            abi: TroveManager_ABI.abi,
+            account: address,
+            address: troveManagerAddress,
+            functionName: "systemDeploymentTime",
+            args: [],
+          });
+
+          return systemDeploymentTime as bigint;
+        } else {
+          return 0n;
+        }
+      } catch (error) {
+        console.log("systemDeploymentTime(): ", error);
+        return 0n;
+      }
+    },
+    [isConnected, address, chain, publicClient],
+  );
   const getTroveOwnersCount = useCallback(
     async (troveManagerAddress: Address): Promise<bigint> => {
       try {
@@ -502,6 +544,8 @@ export const useTroveManager = (): {
   );
 
   return {
+    systemDeploymentTime,
+    BOOTSTRAP_PERIOD,
     redeemCollateral,
     convertYieldTokensToShares,
     getTroveOwnersCount,
